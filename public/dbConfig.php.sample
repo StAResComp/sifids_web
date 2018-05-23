@@ -1,0 +1,11 @@
+<?php
+
+declare(strict_types=1);
+
+define('SIFIDS_DB_HOST', ''); // e.g. db.example.com
+define('SIFIDS_DB_DBNAME', ''); // e.g. my_database
+define('SIFIDS_DB_USER', ''); // e.g. my_db_user
+define('SIFIDS_DB_PASS', ''); // e.g. my_secret
+define('SIFIDS_DB_PORT', 5432); // e.g. 5432
+
+?>
