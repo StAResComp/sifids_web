@@ -1,2 +1,4 @@
 # don't use public/*Config.php - *Config.php.sample files still allowed
 public/*Config.php
+# don't use .touch files in db/
+db/*.touch

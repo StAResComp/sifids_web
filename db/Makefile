@@ -5,7 +5,8 @@ TOUCH = $(SQL:%.sql=%.touch)
 
 DBHOST = localhost
 DBPORT = 5435
-DB_CONN = psql -U sifids_w -h $(DBHOST) -p $(DBPORT) -d sifids_observations
+PGPASSFILE = /home/sifids/.pgpass
+DB_CONN = PGPASSFILE=$(PGPASSFILE) psql -U sifids_w -h $(DBHOST) -p $(DBPORT) -d sifids_observations
 
 all : $(TOUCH)
 
