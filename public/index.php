@@ -67,7 +67,10 @@ try {
 } catch (\Exception $e) {
     header('HTTP/1.0 400 Bad Request', true, 400);
     print $e->getMessage();
-    print_r($db->getErrorInfo());
+    
+    if ($db) {
+        print_r($db->getErrorInfo());
+    }
 }
 
 ?>

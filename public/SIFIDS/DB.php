@@ -87,7 +87,7 @@ class DB {
     //}}}
     
     public function getErrorInfo() : array { //{{{
-        return $this->conn->getErrorInfo();
+        return $this->conn->errorInfo();
     }
     //}}}
 }
