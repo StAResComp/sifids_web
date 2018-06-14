@@ -2,7 +2,7 @@
 
 -- schema for SIFIDS observations
 
-CREATE EXTENSION postgis; -- only needed once really
+--CREATE EXTENSION postgis; -- only needed once really
 
 DROP TABLE IF EXISTS vessels CASCADE;
 CREATE TABLE vessels (
@@ -26,12 +26,12 @@ CREATE TABLE tracks (
   fishing INTEGER DEFAULT 0,
   lat NUMERIC,
   lon NUMERIC,
-  geom GEOMETRY(POINT, 4326),
+--  geom GEOMETRY(POINT, 4326),
   PRIMARY KEY (upload_id, time_stamp)
 );
 
 CREATE INDEX track_time_stamp_idx ON tracks (time_stamp);
-CREATE INDEX track_gist_idx ON tracks USING GIST(geom);
+--CREATE INDEX track_gist_idx ON tracks USING GIST(geom);
 
 DROP TABLE IF EXISTS animals CASCADE;
 CREATE TABLE animals (
@@ -60,11 +60,11 @@ CREATE TABLE observations (
   species_id INTEGER REFERENCES species (species_id),
   lat NUMERIC,
   lon NUMERIC,
-  geom GEOMETRY(POINT, 4326),
+--  geom GEOMETRY(POINT, 4326),
   observed_count INTEGER,
   notes TEXT,
   PRIMARY KEY (upload_id, time_stamp)
 );
 
 CREATE INDEX observation_time_stamp_idx ON observations (time_stamp);
-CREATE INDEX observation_gist_idx ON observations USING GIST(geom);
+--CREATE INDEX observation_gist_idx ON observations USING GIST(geom);

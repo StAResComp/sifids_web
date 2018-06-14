@@ -1,6 +1,7 @@
 # -*- make -*-
 
-SQL = schema.sql triggers.sql functions.sql
+#SQL = schema.sql triggers.sql functions.sql
+SQL = schema.sql functions.sql
 TOUCH = $(SQL:%.sql=%.touch)
 
 DBHOST = localhost
