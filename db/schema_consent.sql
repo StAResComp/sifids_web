@@ -21,5 +21,6 @@ CREATE TABLE consent (
   consent_photography_capture BOOLEAN DEFAULT TRUE,
   consent_photography_publication BOOLEAN DEFAULT TRUE,
   consent_photography_future_studies BOOLEAN DEFAULT TRUE,
-  consent_fish_1 BOOLEAN DEFAULT TRUE
+  consent_fish_1 BOOLEAN DEFAULT TRUE,
+  time_stamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

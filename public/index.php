@@ -143,15 +143,15 @@ function consent(array $fields) { //{{{
     
     // make sure that these fields all have 'true' in them
     $tFields = array('consent_read_understand', 'consent_questions_opportunity',
-                     'consent_questions_answered', 'consent_can_withdraw'.
+                     'consent_questions_answered', 'consent_can_withdraw',
                      'consent_confidential', 'consent_data_archiving',
                      'consent_risks', 'consent_take_part',
                      'consent_photography_capture', 'consent_photography_publication',
                      'consent_photography_future_studies', 'consent_fish_1');
     
-    foreach ($fFields as $tf) {
+    foreach ($tFields as $tf) {
         if (!isset($fields[$tf]) || 'true' != $fields[$tf]) {
-            throw new \Exception('Consent field missing or not true', 
+            throw new \Exception('Consent field missing or not true',
                                  SIFIDS_USER_ERROR);
         }
     }
@@ -171,6 +171,8 @@ function consent(array $fields) { //{{{
         throw new \Exception('Missing PLN field', SIFIDS_USER_ERROR);
     }
     
+    $db = DB::getInstance(true); // with transaction
+    
     if (!$results = $db->insertVessel($fields['pref_vessel_pln'])) {
         throw new \Exception('Problem adding vessel', SIFIDS_DB_ERROR);
     }
@@ -188,7 +190,7 @@ function consent(array $fields) { //{{{
                              SIFIDS_DB_ERROR);
     }
     
-    throw new \Exception('Observation added', SIFIDS_OK);
+    throw new \Exception('Consent added', SIFIDS_OK);
 }
 //}}}
 
