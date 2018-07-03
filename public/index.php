@@ -20,11 +20,13 @@ function tracks(string $vesselName, string $tracks) { //{{{
     // write tracks to file
     $filename = tempnam('/tmp', 'sifids');
     if (!$fh = fopen($filename, 'w')) {
-        throw new \Exception('Problem opening temp track file for writing', SIFIDS_FILE_ERROR);
+        throw new \Exception('Problem opening temp track file for writing', 
+                             SIFIDS_FILE_ERROR);
     }
     
     if (false === fwrite($fh, $tracks)) {
-        throw new \Exception('Problem writing to temp track file', SIFIDS_FILE_ERROR);
+        throw new \Exception('Problem writing to temp track file', 
+                             SIFIDS_FILE_ERROR);
     }
     
     fclose($fh);
@@ -47,14 +49,16 @@ function tracks(string $vesselName, string $tracks) { //{{{
     
     // read tracks as CSV file
     if (!$fh = fopen($filename, 'r')) {
-        throw new \Exception('Probelm opening temp track file for reading', SIFIDS_FILE_ERROR);
+        throw new \Exception('Probelm opening temp track file for reading', 
+                             SIFIDS_FILE_ERROR);
     }
     
     // loop over lines in CSV
     while ($line = fgetcsv($fh)) {
         // check that line is long enough
         if (!isset($line[3])) {
-            throw new \Exception('Need timestamp, fishing, lat, lon in each line', SIFIDS_USER_ERROR);
+            throw new \Exception('Need timestamp, fishing, lat, lon in each line', 
+                                 SIFIDS_USER_ERROR);
         }
         
         // insert point - don't care about success or not
@@ -75,7 +79,8 @@ function observation(array $fields) { ///{{{
     
     if (empty($fields['timestamp']) || empty($fields['animal']) ||
         empty($fields['latitude']) || empty($fields['longitude'])) {
-        throw new \Exception('Missing timestamp/animal/lat/lon for observation', 3);
+        throw new \Exception('Missing timestamp/animal/lat/lon for observation', 
+                             SIFIDS_USER_ERROR);
     }
     
     // default values for fields
@@ -128,7 +133,62 @@ function observation(array $fields) { ///{{{
         throw new \Exception('Problem adding observation', SIFIDS_DB_ERROR);
     }
     
-    throw new \Exception('Observation added', 0);
+    throw new \Exception('Observation added', SIFIDS_OK);
+}
+//}}}
+
+// consent data
+function consent(array $fields) { //{{{
+    global $db;
+    
+    // make sure that these fields all have 'true' in them
+    $tFields = array('consent_read_understand', 'consent_questions_opportunity',
+                     'consent_questions_answered', 'consent_can_withdraw'.
+                     'consent_confidential', 'consent_data_archiving',
+                     'consent_risks', 'consent_take_part',
+                     'consent_photography_capture', 'consent_photography_publication',
+                     'consent_photography_future_studies', 'consent_fish_1');
+    
+    foreach ($fFields as $tf) {
+        if (!isset($fields[$tf]) || 'true' != $fields[$tf]) {
+            throw new \Exception('Consent field missing or not true', 
+                                 SIFIDS_USER_ERROR);
+        }
+    }
+    
+    // optional fields - set to empty if missing
+    $oFields = array('consent_name', 'consent_email', 'consent_phone',
+                     'pref_vessel_name', 'pref_owner_master_name');
+    
+    foreach ($oFields as $of) {
+        if (!isset($fields[$of])) {
+            $fields[$of] = '';
+        }
+    }
+    
+    // use vessel PLN to get vessel ID
+    if (!isset($fields['pref_vessel_pln'])) {
+        throw new \Exception('Missing PLN field', SIFIDS_USER_ERROR);
+    }
+    
+    if (!$results = $db->insertVessel($fields['pref_vessel_pln'])) {
+        throw new \Exception('Problem adding vessel', SIFIDS_DB_ERROR);
+    }
+    
+    $vesselID = (int) $results[0][0];
+
+    // insert consent information
+    if (!$results = $db->insertConsent($vesselID, 
+                                       $fields['consent_name'],
+                                       $fields['consent_email'], 
+                                       $fields['consent_phone'],
+                                       $fields['pref_vessel_name'],
+                                       $fields['pref_owner_master_name'])) {
+        throw new \Exception('Problem adding consent information', 
+                             SIFIDS_DB_ERROR);
+    }
+    
+    throw new \Exception('Observation added', SIFIDS_OK);
 }
 //}}}
 
@@ -137,9 +197,20 @@ try {
     if (isset($_POST['vessel_name']) && isset($_POST['tracks'])) {
         tracks($_POST['vessel_name'], $_POST['tracks']);
     }
-    // observation upload
+    // JSON data upload
     elseif ($input = file_get_contents('php://input')) {
-        observation(json_decode($input, true));
+        $json = json_decode($input, true);
+        // animal field suggests observation
+        if (isset($json['animal'])) {
+            observation($json);
+        }
+        // consent_read_understand field suggests consent
+        elseif (isset($json['consent_read_understand'])) {
+            consent($json);
+        }
+        else {
+            throw new \Exception('Unrecognised data', SIFIDS_USER_ERROR);
+        }
     }
     // error
     else {

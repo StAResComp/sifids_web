@@ -182,3 +182,27 @@ RETURN QUERY
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
+
+-- insert a row in the consent table
+-- returning the vessel ID
+CREATE OR REPLACE FUNCTION insertConsent ( --{{{
+  in_vessel_id INTEGER,
+  in_consent_name TEXT,
+  in_consent_email TEXT,
+  in_consent_phone TEXT,
+  in_pref_vessel_name TEXT,
+  in_pref_owner_master_name TEXT,
+  OUT out_vessel_id INTEGER
+)
+RETURNS SETOF INTEGER
+AS $FUNC$
+BEGIN
+  INSERT INTO consent (vessel_id, consent_name, consent_email, consent_phone, pref_vessel_name, pref_owner_master_name)
+       VALUES (in_vessel_id, in_consent_name, in_consent_email, in_consent_phone, in_pref_vessel_name, in_pref_owner_master_name);
+        
+  -- return vessel ID - just to return something
+RETURN QUERY
+  SELECT in_vessel_id;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
