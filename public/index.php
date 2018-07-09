@@ -56,13 +56,13 @@ function tracks(string $vesselName, string $tracks) { //{{{
     // loop over lines in CSV
     while ($line = fgetcsv($fh)) {
         // check that line is long enough
-        if (!isset($line[3])) {
-            throw new \Exception('Need timestamp, fishing, lat, lon in each line', 
+        if (!isset($line[4])) {
+            throw new \Exception('Need timestamp, fishing, lat, lon and accuracy in each line', 
                                  SIFIDS_USER_ERROR);
         }
         
         // insert point - don't care about success or not
-        $db->insertTrack($uploadID, $line[0], $line[1], $line[2], $line[3]);
+        $db->insertTrack($uploadID, $line[0], $line[1], $line[2], $line[3], $line[4]);
     }
     
     // close and delete temp file

@@ -10,13 +10,14 @@ CREATE OR REPLACE FUNCTION insertTrack ( --{{{
   in_fishing INTEGER,
   in_lat NUMERIC,
   in_lon NUMERIC,
+  in_accuracy NUMERIC,
   OUT out_upload_id INTEGER
 )
 RETURNS SETOF INTEGER
 AS $FUNC$
 BEGIN
-  INSERT INTO tracks (upload_id, time_stamp, fishing, lat, lon)
-       VALUES (in_upload_id, in_time_stamp, in_fishing, in_lat, in_lon);
+  INSERT INTO tracks (upload_id, time_stamp, fishing, lat, lon, accuracy)
+       VALUES (in_upload_id, in_time_stamp, in_fishing, in_lat, in_lon, in_accuracy);
         
   -- return upload ID - just to return something
 RETURN QUERY

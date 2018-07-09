@@ -26,6 +26,7 @@ CREATE TABLE tracks (
   fishing INTEGER DEFAULT 0,
   lat NUMERIC,
   lon NUMERIC,
+  accuracy NUMERIC,
 --  geom GEOMETRY(POINT, 4326),
   PRIMARY KEY (upload_id, time_stamp)
 );
