@@ -11,7 +11,7 @@ $db = null;
 define('SIFIDS_FILE_ERROR', 1);
 define('SIFIDS_DB_ERROR', 2);
 define('SIFIDS_USER_ERROR', 3);
-define('SIFIDS_OK', 0);
+define('SIFIDS_OK', 10);
 
 // track uploaded
 function tracks(string $vesselName, string $tracks) { //{{{
@@ -194,10 +194,149 @@ function consent(array $fields) { //{{{
 }
 //}}}
 
+// fish1 form uploaded
+function fish1Form(string $form) { //{{{
+    global $db;
+    
+    // write form to file
+    $filename = tempnam('/tmp', 'sifids');
+    if (!$fh = fopen($filename, 'w')) {
+        throw new \Exception('Problem opening temp Fish1 form file for writing', 
+                             SIFIDS_FILE_ERROR);
+    }
+    
+    if (false === fwrite($fh, $form)) {
+        throw new \Exception('Problem writing to temp Fish 1 form file', 
+                             SIFIDS_FILE_ERROR);
+    }
+    
+    fclose($fh);
+    
+    // read form as CSV file
+    if (!$fh = fopen($filename, 'r')) {
+        throw new \Exception('Problem opening temp Fish 1 form file for reading', 
+                             SIFIDS_FILE_ERROR);
+    }
+    
+    // header data
+    $headerFields = array('upload_id' => null,
+                          'fishery_office' => null, 'email' => null, 
+                          'port_of_departure' => null, 'port_of_landing' => null,
+                          'pln' => null, 'vessel_name' => null, 
+                          'owner_master' => null, 'address' => null, 
+                          'total_pots_fishing' => null);
+    $headerKeys = array_keys($headerFields);
+    $headerFmt = '/^# ([^:]+): (.*)$/';
+    
+    $db = DB::getInstance(true);
+    
+    // start reading in lines in full
+    while ($line = fgets($fh)) {
+        $line = trim($line);
+        $matches = array();
+        
+        // if blank line or match fails, then finished with header
+        if (!$line || !preg_match($headerFmt, $line, $matches)) {
+            break;
+        }
+        
+        $value = $matches[2];
+        
+        // generate field name and make sure it is valid
+        $fieldName = str_replace(array(' ', '/'), '_', 
+                                 strtolower($matches[1]));
+        if (!in_array($fieldName, $headerKeys)) {
+            throw new \Exception('Unrecognised header field - ' . $fieldName, 
+                                 SIFIDS_USER_ERROR);
+        }
+        
+        // repeated field, keep first value
+        if ('' != $headerFields[$fieldName]) {
+            continue;
+        }
+        
+        // use PLN to get vessel ID
+        if ('pln' == $fieldName) {
+            if (!$results = $db->insertVessel($value)) {
+                throw new \Exception('Problem adding vessel', SIFIDS_DB_ERROR);
+            }
+            
+            $value = (int) $results[0][0];
+        }
+        
+        $headerFields[$fieldName] = $value;
+    }
+
+    // make sure that PLN (now vessel ID) was present
+    if (!$headerFields['pln']) {
+        throw new \Exception('Need PLN for Fish 1 form', SIFIDS_USER_ERROR);
+    }
+
+    // record upload
+    if (!$results = $db->insertUpload($headerFields['pln'])) {
+        throw new \Exception('Problem adding upload', SIFIDS_DB_ERROR);
+    }
+    
+    $headerFields['upload_id'] = (int) $results[0][0];
+    
+    // record header fields
+    if (!$results != call_user_func_array(array($db, 'addFish1FormHeader'),
+                                          $headerFields)) {
+        throw new \Exception('Problem adding Fish 1 form header', 
+                             SIFIDS_DB_ERROR);
+    }
+
+    // discard headings for row data
+    $line = fgetcsv($fh);
+    $line = fgetcsv($fh);
+    
+    // loop over lines in CSV
+    while ($line = fgetcsv($fh)) {
+        $rowData = array($headerFields['upload_id']);
+        
+        foreach ($line as $i => $col) {
+            switch ($col) {
+                // empty strings become null
+             case '':
+                $col = null;
+                break;
+                
+                // true/false in DIS/BMS fields become ints (1/0)
+             case 'true':
+             case 'false':
+                if (9 == $i || 10 == $i) {
+                    $col = (int) ('true' == $col);
+                }
+                break;
+            }
+            
+            $rowData[] = $col;
+        }
+        
+        // add row to database
+        if (!$results = call_user_func_array(array($db, 'addFish1FormRow'),
+                                             $rowData)) {
+            throw new \Exception('Problem adding Fish 1 form row data',
+                                 SIFIDS_DB_ERROR);
+        }
+    }
+    
+    // close and delete temp file
+    fclose($fh);
+    unlink($filename);
+    
+    throw new \Exception('Fish 1 form added', SIFIDS_OK);
+}
+//}}}
+
 try {
     // track upload
     if (isset($_POST['vessel_name']) && isset($_POST['tracks'])) {
         tracks($_POST['vessel_name'], $_POST['tracks']);
+    }
+    // fish1 form upload
+    elseif (isset($_POST['fish_1_form'])) {
+        fish1Form($_POST['fish_1_form']);
     }
     // JSON data upload
     elseif ($input = file_get_contents('php://input')) {

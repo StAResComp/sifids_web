@@ -26,9 +26,9 @@ CREATE TABLE tracks (
   fishing INTEGER DEFAULT 0,
   lat NUMERIC,
   lon NUMERIC,
-  accuracy NUMERIC,
+  accuracy NUMERIC
 --  geom GEOMETRY(POINT, 4326),
-  PRIMARY KEY (upload_id, time_stamp)
+--  PRIMARY KEY (upload_id, time_stamp)
 );
 
 CREATE INDEX track_time_stamp_idx ON tracks (time_stamp);

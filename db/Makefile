@@ -1,7 +1,7 @@
 # -*- make -*-
 
 #SQL = schema.sql triggers.sql functions.sql
-SQL = schema.sql schema_consent.sql functions.sql
+SQL = schema.sql schema_consent.sql schema_fish1form.sql functions.sql
 TOUCH = $(SQL:%.sql=%.touch)
 
 DBHOST = localhost
