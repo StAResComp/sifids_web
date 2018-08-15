@@ -227,7 +227,7 @@ function fish1Form(string $form) { //{{{
                           'total_pots_fishing' => null, 
                           'comment_and_buyers_information' => null);
     $headerKeys = array_keys($headerFields);
-    $headerFmt = '/^# ([^:]+): (.*)$/';
+    $headerFmt = '/^# ([^:]+):\s*(.*)$/';
     
     $db = DB::getInstance(true);
     
@@ -238,6 +238,10 @@ function fish1Form(string $form) { //{{{
         
         // if blank line or match fails, then finished with header
         if (!$line || !preg_match($headerFmt, $line, $matches)) {
+            if (!isset($headerFields['pln'])) {
+                throw new \Exception('Need PLN for Fish 1 form', SIFIDS_USER_ERROR);
+            }
+            
             break;
         }
         
@@ -288,8 +292,8 @@ function fish1Form(string $form) { //{{{
     }
 
     // discard headings for row data
-    $line = fgetcsv($fh);
-    $line = fgetcsv($fh);
+    $line = fgets($fh);
+    $line = fgets($fh);
     
     // loop over lines in CSV
     while ($line = fgetcsv($fh)) {
