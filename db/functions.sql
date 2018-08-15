@@ -219,13 +219,14 @@ CREATE OR REPLACE FUNCTION addFish1FormHeader ( --{{{
   in_vessel_name TEXT,
   in_owner_master TEXT,
   in_address TEXT,
-  in_total_pots_fishing INTEGER
+  in_total_pots_fishing INTEGER,
+  in_comments TEXT
 )
 RETURNS SETOF INTEGER
 AS $FUNC$
 BEGIN
-  INSERT INTO fish1_header (upload_id, vessel_id, fishery_office, email, port_of_departure, port_of_landing, vessel_name, owner_master, address, total_pots_fishing)
-       VALUES (in_upload_id, in_vessel_id, in_fishery_office, in_email, in_port_of_departure, in_port_of_landing, in_vessel_name, in_owner_master, in_address, in_total_pots_fishing);
+  INSERT INTO fish1_header (upload_id, vessel_id, fishery_office, email, port_of_departure, port_of_landing, vessel_name, owner_master, address, total_pots_fishing, comments)
+       VALUES (in_upload_id, in_vessel_id, in_fishery_office, in_email, in_port_of_departure, in_port_of_landing, in_vessel_name, in_owner_master, in_address, in_total_pots_fishing, in_comments);
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
@@ -236,7 +237,7 @@ CREATE OR REPLACE FUNCTION addFish1FormRow ( --{{{
   in_fishing_activity_date TIMESTAMP WITH TIME ZONE,
   in_lat_lang VARCHAR(16),
   in_stat_rect_ices_area VARCHAR(8),
-  in_gear INTEGER,
+  in_gear TEXT,
   in_mesh_size INTEGER,
   in_species TEXT,
   in_state TEXT,

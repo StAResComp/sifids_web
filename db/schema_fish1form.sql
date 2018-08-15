@@ -13,7 +13,8 @@ CREATE TABLE fish1_header (
   vessel_name TEXT,
   owner_master TEXT,
   address TEXT,
-  total_pots_fishing INTEGER
+  total_pots_fishing INTEGER,
+  comments TEXT
 );
 
 DROP TABLE IF EXISTS fish1_row CASCADE;
@@ -22,7 +23,7 @@ CREATE TABLE fish1_row (
   fishing_activity_date TIMESTAMP WITH TIME ZONE,
   lat_lang VARCHAR(16),
   stat_rect_ices_area VARCHAR(8),
-  gear INTEGER,
+  gear TEXT,
   mesh_size INTEGER,
   species TEXT,
   state TEXT,

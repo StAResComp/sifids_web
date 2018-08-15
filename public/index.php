@@ -224,7 +224,8 @@ function fish1Form(string $form) { //{{{
                           'port_of_departure' => null, 'port_of_landing' => null,
                           'pln' => null, 'vessel_name' => null, 
                           'owner_master' => null, 'address' => null, 
-                          'total_pots_fishing' => null);
+                          'total_pots_fishing' => null, 
+                          'comment_and_buyers_information' => null);
     $headerKeys = array_keys($headerFields);
     $headerFmt = '/^# ([^:]+): (.*)$/';
     
