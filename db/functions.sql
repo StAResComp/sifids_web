@@ -198,8 +198,17 @@ CREATE OR REPLACE FUNCTION insertConsent ( --{{{
 RETURNS SETOF INTEGER
 AS $FUNC$
 BEGIN
-  INSERT INTO consent (vessel_id, consent_name, consent_email, consent_phone, pref_vessel_name, pref_owner_master_name)
-       VALUES (in_vessel_id, in_consent_name, in_consent_email, in_consent_phone, in_pref_vessel_name, in_pref_owner_master_name);
+  -- first see if vessel already exists
+  SELECT vessel_id
+    FROM consent
+   WHERE vessel_id = in_vessel_id
+     AND consent_email = in_consent_email;
+   
+   -- doesn't exist
+   IF (NOT FOUND) THEN
+     INSERT INTO consent (vessel_id, consent_name, consent_email, consent_phone, pref_vessel_name, pref_owner_master_name)
+          VALUES (in_vessel_id, in_consent_name, in_consent_email, in_consent_phone, in_pref_vessel_name, in_pref_owner_master_name);
+   END IF;
         
   -- return vessel ID - just to return something
 RETURN QUERY
