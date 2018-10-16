@@ -200,6 +200,7 @@ AS $FUNC$
 BEGIN
   -- first see if vessel already exists
   SELECT vessel_id
+    INTO out_vessel_id
     FROM consent
    WHERE vessel_id = in_vessel_id
      AND consent_email = in_consent_email;
