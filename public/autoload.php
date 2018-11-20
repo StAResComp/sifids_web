@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 // add includes directory
 //set_include_path(get_include_path() . PATH_SEPARATOR . IDB_INCLUDES_PATH);
-//set_include_path(IDB_INCLUDES_PATH);
+set_include_path('/home/sifids/repo/public/');
 
 // look for Class.php in path above
 //spl_autoload_extensions('.php');

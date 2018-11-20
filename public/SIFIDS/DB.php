@@ -11,19 +11,27 @@ class DB {
     private static $instance = null;
     
     // private constructor - only called by getInstance
-    private function __construct() { //{{{
+    private function __construct(string $schema='') { //{{{
         $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s', 
                        SIFIDS_DB_HOST, SIFIDS_DB_PORT, SIFIDS_DB_DBNAME);
         if (!$this->conn = new \PDO($dsn, SIFIDS_DB_USER, SIFIDS_DB_PASS)) {
             throw new \Exception('Problem connecting to database');
         }
+        
+        // set schema if passed - will match relations in given schema before public
+        if ($schema) {
+            $sql = sprintf("SET SCHEMA '%s';", $schema);
+            if (false === $this->conn->exec($sql)) {
+                throw new \Exception('Problem setting schema');
+            }
+        }
     }
     //}}}
     
     // call this static method to get singleton
-    public static function getInstance(bool $transaction=false) { //{{{
+    public static function getInstance(bool $transaction=false, string $schema='') { //{{{
         if (null == self::$instance) {
-            self::$instance = new DB();
+            self::$instance = new DB($schema);
         }
         
         if ($transaction && !self::$instance->conn->inTransaction()) {
@@ -47,8 +55,7 @@ class DB {
         $stmt = $this->conn->prepare($sql);
         
         if (!$stmt->execute($args)) {
-            throw new \Exception('Problem executing stored procedure ' . 
-                                 print_r($stmt->errorInfo(), true));
+            throw new \Exception('Problem executing stored procedure');
         }
         
         // send back results
