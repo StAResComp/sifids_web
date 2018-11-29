@@ -4,8 +4,8 @@
 
 DROP TABLE IF EXISTS fish1_header CASCADE;
 CREATE TABLE fish1_header (
-  upload_id INTEGER PRIMARY KEY,
-  vessel_id INTEGER,
+  upload_id INTEGER PRIMARY KEY REFERENCES uploads(upload_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  vessel_id INTEGER REFERENCES vessels (vessel_id) ON DELETE CASCADE ON UPDATE CASCADE,
   fishery_office TEXT,
   email TEXT,
   port_of_departure TEXT,
@@ -19,7 +19,7 @@ CREATE TABLE fish1_header (
 
 DROP TABLE IF EXISTS fish1_row CASCADE;
 CREATE TABLE fish1_row (
-  upload_id INTEGER,
+  upload_id INTEGER REFERENCES uploads(upload_id) ON DELETE CASCADE ON UPDATE CASCADE,
   fishing_activity_date TIMESTAMP WITH TIME ZONE,
   lat_lang VARCHAR(16),
   stat_rect_ices_area VARCHAR(8),

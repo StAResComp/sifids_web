@@ -4,7 +4,7 @@
 
 DROP TABLE IF EXISTS consent CASCADE;
 CREATE TABLE consent (
-  vessel_id INTEGER PRIMARY KEY,
+  vessel_id INTEGER PRIMARY KEY REFERENCES vessels (vessel_id) ON DELETE CASCADE ON UPDATE CASCADE,
   consent_name TEXT,
   consent_email TEXT,
   consent_phone TEXT,

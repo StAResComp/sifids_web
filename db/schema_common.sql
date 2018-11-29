@@ -7,7 +7,7 @@
 DROP TABLE IF EXISTS vessels CASCADE;
 CREATE TABLE vessels (
   vessel_id SERIAL PRIMARY KEY,
-  vessel_name TEXT UNIQUE,
+  vessel_name TEXT,
   created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   active INTEGER DEFAULT 1
 );
@@ -15,13 +15,13 @@ CREATE TABLE vessels (
 DROP TABLE IF EXISTS uploads CASCADE;
 CREATE TABLE uploads (
   upload_id SERIAL PRIMARY KEY,
-  vessel_id INTEGER REFERENCES vessels (vessel_id),
+  vessel_id INTEGER REFERENCES vessels (vessel_id) ON DELETE CASCADE ON UPDATE CASCADE,
   time_stamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 DROP TABLE IF EXISTS tracks;
 CREATE TABLE tracks (
-  upload_id INTEGER REFERENCES uploads (upload_id),
+  upload_id INTEGER REFERENCES uploads (upload_id) ON DELETE CASCADE ON UPDATE CASCADE,
   time_stamp TIMESTAMP WITH TIME ZONE,
   fishing INTEGER DEFAULT 0,
   lat NUMERIC,
