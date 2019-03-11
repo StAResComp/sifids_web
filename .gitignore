@@ -3,3 +3,6 @@ public/*Config.php
 # don't use .touch or .d sfiles in db/
 db/*.touch
 db/*.d
+db/schema
+db/schemaspy.properties
+public/schema

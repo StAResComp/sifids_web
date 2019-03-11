@@ -5,7 +5,7 @@ library(leaflet)
 shinyServer(function(input, output) {
     # get database connection details
     deets <- scan('~/.pgpass', sep=':', what=list('', '', '', '', ''))
-    i <- 4 # which line to use
+    i <- 3 # which line to use
     
     # make connection
     conn = dbConnect(dbDriver('PostgreSQL'), 

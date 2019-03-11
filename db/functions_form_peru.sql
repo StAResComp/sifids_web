@@ -32,13 +32,15 @@ CREATE OR REPLACE FUNCTION addFormRow ( --{{{
   in_lat_lang VARCHAR(16),
   in_gear TEXT,
   in_landing_or_discard_date TIMESTAMP WITH TIME ZONE,
-  in_comments TEXT
+  in_comments TEXT,
+  in_mesh_size INTEGER,
+  in_net_size INTEGER
 )
 RETURNS SETOF BIGINT
 AS $FUNC$
 BEGIN
-  INSERT INTO form_row (upload_id, fishing_activity_date, lat_lang, gear, landing_or_discard_date, comments)
-       VALUES (in_upload_id, in_fishing_activity_date, in_lat_lang, in_gear, in_landing_or_discard_date, in_comments);
+  INSERT INTO form_row (upload_id, fishing_activity_date, lat_lang, gear, landing_or_discard_date, comments, mesh_size, net_size)
+       VALUES (in_upload_id, in_fishing_activity_date, in_lat_lang, in_gear, in_landing_or_discard_date, in_comments, in_mesh_size, in_net_size);
        
   RETURN QUERY
     SELECT CURRVAL(PG_GET_SERIAL_SEQUENCE('form_row', 'form_row_id'));

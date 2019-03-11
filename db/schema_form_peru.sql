@@ -25,7 +25,9 @@ CREATE TABLE form_row (
   lat_lang VARCHAR(16),
   gear TEXT,
   landing_or_discard_date TIMESTAMP WITH TIME ZONE,
-  comments TEXT
+  comments TEXT,
+  mesh_size INTEGER,
+  net_size INTEGER
 );
 
 -- row for each fish in row

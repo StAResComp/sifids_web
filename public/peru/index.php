@@ -209,7 +209,12 @@ function form(string $form) { //{{{
                               'PLN' => 'pln',
                               'Nombre de la embarcación' => 'vessel_name',
                               'Nombre del patrón' => 'owner_master',
-                              'Dirección' => 'address');
+                              'Dirección' => 'address',
+                              'Port of Departure' => 'port_of_departure',
+                              'Port of Landing' => 'port_of_landing',
+                              'Vessel Name' => 'vessel_name',
+                              'Owner/Master' => 'owner_master',
+                              'Address' => 'address');
     $headerKeys = array_keys($headerFields);
     $headerFmt = '/^# ([^:]+):\s*(.*)$/';
     
@@ -225,7 +230,7 @@ function form(string $form) { //{{{
             break;
         }
         
-        $value = $matches[2];
+        $value = $matches[2] != '' ? $matches[2] : null;
         
         // translate field name and make sure it is valid
         $fieldName = isset($translatedFields[$matches[1]]) ? 
@@ -273,19 +278,20 @@ function form(string $form) { //{{{
     }
 
     // headings for row data
-    //$line = fgets($fh);
     $rowFields = fgetcsv($fh);
     
     // fields for row
-    $rowCols = array(0, 1, 2, 15, 16);
-    $fishCols = array(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+    $rowCols = array(0, 1, 2, 15, 16, 3, 17);
+    $fishCols = array(4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
     
     // loop over lines in CSV
     while ($line = fgetcsv($fh)) {
         $rowData = array($headerFields['upload_id']);
         
         foreach ($rowCols as $i) {
-            $rowData[] = $line[$i];
+            $rowData[] = 
+              isset($line[$i]) && '' != $line[$i] && 'Not Given' != $line[$i] ?
+              $line[$i] : null;
         }
         
         // add row to database
@@ -299,7 +305,7 @@ function form(string $form) { //{{{
 
         // loop over species columns in line
         foreach ($fishCols as $i) {
-            if (!$line[$i]) {
+            if (!isset($line[$i]) || !$line[$i]) {
                 continue;
             }
             
