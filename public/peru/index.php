@@ -230,7 +230,12 @@ function form(string $form) { //{{{
             break;
         }
         
-        $value = $matches[2] != '' ? $matches[2] : null;
+        // skip lines with no value - will use null default
+        if (!$matches[2]) {
+            continue;
+        }
+        
+        $value = $matches[2];
         
         // translate field name and make sure it is valid
         $fieldName = isset($translatedFields[$matches[1]]) ? 
@@ -283,6 +288,19 @@ function form(string $form) { //{{{
     // fields for row
     $rowCols = array(0, 1, 2, 15, 16, 3, 17);
     $fishCols = array(4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+    $potaCol = 15;
+    
+    // check to see if app includes column for Pota
+    if (in_array('Pota', $rowFields)) {
+        $fishCols[] = $potaCol;
+        
+        // increment row columns which come after column for Pota
+        foreach ($rowCols as $r => $v) {
+            if ($rowCols[$r] >= $potaCol) {
+                $rowCols[$r] ++;
+            }
+        }
+    }
     
     // loop over lines in CSV
     while ($line = fgetcsv($fh)) {
