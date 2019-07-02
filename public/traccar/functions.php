@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SIFIDS;
+namespace TRACCAR;
 
 // add data from JSON object to database
 function addData(\stdClass $data) { //{{{
