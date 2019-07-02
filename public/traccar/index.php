@@ -29,7 +29,7 @@ try {
     addData($data);
 }
 catch (\Throwable $e) {
-    die($e->getMessage() . "\n");
+    error_log($e->getMessage() . "\n");
 }
 
 ?>
