@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SIFIDS;
+namespace TRACCAR;
 
 require_once '../autoload.php';
 require_once 'functions.php';
