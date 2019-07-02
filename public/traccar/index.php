@@ -12,7 +12,9 @@ $attributes = array('power', 'distance', 'totalDistance');
 
 try {
     $db = DB::getInstance(true, 'traccar');
-    $stdin = stream_get_contents(STDIN);
+    $fh = fopen('php://input');
+    $stdin = stream_get_contents($fh);
+    fclose($fh);
     
     if (!$stdin) {
         throw new \Exception('No input');
