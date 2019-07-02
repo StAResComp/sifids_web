@@ -17,7 +17,7 @@ try {
     fclose($fh);
     
     if (!$stdin) {
-        throw new \Exception('No input');
+        throw new \Exception('No input given');
     }
     
     if (!$data = json_decode($stdin)) {
