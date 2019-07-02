@@ -12,7 +12,7 @@ $attributes = array('power', 'distance', 'totalDistance');
 
 try {
     $db = DB::getInstance(true, 'traccar');
-    $fh = fopen('php://input');
+    $fh = fopen('php://input', 'r');
     $stdin = stream_get_contents($fh);
     fclose($fh);
     
