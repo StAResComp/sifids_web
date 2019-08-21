@@ -1,0 +1,5 @@
+div.list {
+  overflow-y: scroll;
+  max-height: 400px;
+  background-color: #eee;
+}

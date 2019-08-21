@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!doctype html>
+<html>
+  <head>
+    <title>SIFIDS - Admin interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <!-- bootstrap CSS -->
+    <link 
+        rel="stylesheet" 
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" 
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" 
+        crossorigin="anonymous"
+        />
+    
+    <!-- local CSS -->
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+  </head>
+  <body>
+    <div class="container">
+      <main role="main">
+        <h1>SIFIDS - Admin interface</h1>
+        <div class="row">
+          <div class="col-md-12" id="errors">&#160;</div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <!-- tab headings -->
+            <nav>
+              <div class="nav nav-tabs" id="navtab" role="tablist">
+                <a class="nav-link" id="users_tab" href="#users_content" role="tab" data-toggle="tab" aria-controls="users_content" aria-selected="true">Users</a>
+                <a class="nav-link" id="vessels_tab" href="#vessels_content" role="tab" data-toggle="tab"aria-controls="vessels_content" aria-selected="false">Vessels</a>
+                <a class="nav-link" id="devices_tab" href="#devices_content" role="tab" data-toggle="tab"aria-controls="devices_content" aria-selected="false">Devices</a>
+                <a class="nav-link" id="entities_tab" href="#entities_content" role="tab" data-toggle="tab"aria-controls="entities_content" aria-selected="false">Entities</a>
+              </div>
+            </nav>
+            <!-- tab content -->
+            <div class="tab-content" id="navtabContent">
+              
+              <!-- users controls -->
+              <div class="tab-pane show active" id="users_content" role="tabpanel" aria-labelledby="users_tab">
+                <div class="container-fluid">
+                  <h2>Users</h2>
+                  <div class="row">
+                    <div class="col-md-3 list" id="users">
+                      <img src="loading.gif"/>
+                    </div>
+                    <div class="col-md-6">
+                      <form id="userForm" class="api" data-id_field="user_id" data-use_form="userForm" data-entity="users" data-refresh="users">
+                      </form>
+                      <form id="userProjectsForm" class="api" data-id_field="user_id" data-use_form="userForm" data-entity="users/user_projects" data-refresh="userProjectsForm">
+                      </form>
+                      <form id="userVesselsForm" class="api" data-id_field="user_id" data-use_form="userForm" data-entity="users/user_vessels" data-refresh="userVesselsForm">
+                      </form>
+                      <form id="userFisheryOfficesForm" class="api" data-id_field="user_id" data-use_form="userForm" data-entity="users/user_fishery_offices" data-refresh="userFisheryOfficesForm">
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- vessels controls -->
+              <div class="tab-pane hide" id="vessels_content" role="tabpanel" aria-labelledby="vessels_tab">
+                <h2>Vessels</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="vessels">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="vesselForm" class="api" data-id_field="vessel_id" data-use_form="vesselForm" data-entity="vessels" data-refresh="vessels">
+                    </form>
+                    <form id="vesselProjectsForm" class="api" data-id_field="vessel_id" data-use_form="vesselForm" data-entity="vessels/vessel_projects" data-refresh="vesselProjectsForm">
+                    </form>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- devices controls -->
+              <div class="tab-pane" id="devices_content" role="tabpanel" aria-labelledby="devices_tab">
+                <h2>Devices</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="devices">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="deviceForm" class="api" data-id_field="device_id" data-use_form="deviceForm" data-entity="devices" data-refresh="devices">
+                    </form>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- various entities controls -->
+              <div class="tab-pane" id="entities_content" role="tabpanel" aria-labelledby="entities_tab">
+                <!-- vessel owners -->
+                <h2>Vessel owners</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="vesselOwners">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="vesselOwnerForm" class="api" data-id_field="owner_id" data-use_form="vesselOwnerForm" data-entity="vessel_owners" data-refresh="vesselOwners">
+                    </form>
+                  </div>
+                </div>
+
+                <!-- device protocols -->
+                <h2>Device protocols</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="deviceProtocols">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="deviceProtocolForm" class="api" data-id_field="protocol_id" data-use_form="deviceProtocolForm" data-entity="device_protocols" data-refresh="deviceProtocols">
+                    </form>
+                  </div>
+                </div>
+                
+                <!-- device models -->
+                <h2>Device models</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="deviceModels">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="deviceModelForm" class="api" data-id_field="model_id" data-use_form="deviceModelForm" data-entity="device_models" data-refresh="deviceModels">
+                    </form>
+                  </div>
+                </div>
+
+                <!-- projects -->
+                <h2>Projects</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="projects">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="projectForm" class="api" data-id_field="project_id" data-use_form="projectForm" data-entity="projects" data-refresh="projects">
+                    </form>
+                  </div>
+                </div>
+
+                <!-- fishery offices -->
+                <h2>Fishery Offices</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="fisheryOffices">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="fisheryOfficeForm" class="api" data-id_field="fo_id" data-use_form="fisheryOfficeForm" data-entity="fishery_offices" data-refresh="fisheryOffices">
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <!-- popper -->
+    <script 
+        src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" 
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" 
+        crossorigin="anonymous"
+        >
+    </script>
+    
+    <!-- bootstrap -->
+    <script 
+        src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" 
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" 
+        crossorigin="anonymous"
+        >
+    </script>
+    
+    <!-- json2html JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/1.2.0/json2html.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js"></script>
+
+    <!-- local JS -->
+    <script src="templates.js"></script>
+    <script src="functions.js"></script>
+  </body>
+</html>
