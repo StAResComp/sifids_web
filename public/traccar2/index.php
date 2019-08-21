@@ -11,7 +11,7 @@ require_once 'functions.php';
 $attributes = array('power', 'distance', 'totalDistance');
 
 try {
-    $db = DB::getInstance(true, 'traccar');
+    $db = DB::getInstance(true);
     $fh = fopen('php://input', 'r');
     $stdin = stream_get_contents($fh);
     fclose($fh);
