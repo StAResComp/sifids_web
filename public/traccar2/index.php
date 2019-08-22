@@ -8,7 +8,7 @@ require_once '../autoload.php';
 require_once 'functions.php';
 
 // attributes of device to record in database
-$attributes = array('power', 'distance', 'totalDistance');
+$attributes = array('power', 'distance', 'totalDistance', 'sat', 'battery');
 
 try {
     $db = DB::getInstance(true);
