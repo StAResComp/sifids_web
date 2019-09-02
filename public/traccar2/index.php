@@ -8,10 +8,21 @@ require_once '../autoload.php';
 require_once 'functions.php';
 
 // attributes of device to record in database
-$attributes = array('power', 'distance', 'totalDistance', 'sat', 'battery');
+$attributes = array(); //'power', 'distance', 'totalDistance', 'sat', 'battery');
 
 try {
-    $db = DB::getInstance(true);
+    $db = DB::getInstance(true); // with transaction
+    
+    // get available attributes
+    if (!$results = $db->getAttributes()) {
+        throw new \Exception('Problem getting attributes');
+    }
+    
+    foreach ($results as $row) {
+        $attributes[] = $row->attribute_name;
+    }
+    
+    // get JSON data from STDIN
     $fh = fopen('php://input', 'r');
     $stdin = stream_get_contents($fh);
     fclose($fh);
@@ -24,9 +35,9 @@ try {
         throw new \Exception('Data not in JSON format');
     }
     
-    file_put_contents('/tmp/traccar.json', 
+    /*file_put_contents('/tmp/traccar.json', 
                       json_encode($data, JSON_PRETTY_PRINT), 
-                      FILE_APPEND);
+                      FILE_APPEND);*/
     
     // convert input JSON string to object and add to database
     addData($data);

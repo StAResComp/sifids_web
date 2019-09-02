@@ -47,11 +47,15 @@ function addData(\stdClass $data) { //{{{
     
     $tripID = $results[0]->trip_id;
     
+    // is track point valid
+    $isValid = 'true' == $data->position->valid ? 1 : 0;
+    
     // add track point
     if (!$results = $db->addTraccarTrack($tripID,
                                          $data->position->latitude,
                                          $data->position->longitude,
-                                         $timestamp)) {
+                                         $timestamp,
+                                         $isValid)) {
         throw new \Exception('Problem adding track point');
     }
 }
