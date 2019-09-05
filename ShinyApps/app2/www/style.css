@@ -1,0 +1,17 @@
+@import "shinythemes/css/flatly.min.css";
+
+body {
+  width: auto; 
+  height: auto; 
+  max-width: auto; 
+  max-height: 800px; 
+  font-family: Calibri;
+}
+
+.shiny-image-output {
+  text-align: center;
+}
+
+table.dataTable {
+  font-size: smaller;
+}
