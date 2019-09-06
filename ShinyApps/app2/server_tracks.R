@@ -107,7 +107,7 @@ tracksTrips <- reactive({
     # need dates
     #req(input$tracksDates[1], input$tracksDates[2])
     dates <- getDateRange(input$tracksDates)
-    if (is.null(dates)) {
+    if (is.null(dates) || is.na(dates)) {
       return()
     }
 
