@@ -3,14 +3,14 @@ layerTab <- tabPanel('Historic data',
   sidebarLayout(
     sidebarPanel(
       radioButtons("layer", "Options",
-        c("Hauls per day (ScotMap data)" = "hauls",
-          "Vessels with creels" = "vessels",
+        c("Hauls per day" = "hauls",
+          "Number of creel vessels" = "vessels",
           "Creel sightings" = "sightings",
           "Minke strandings" = "minke"),
         selected = character(0)
         ),
       
-      conditionalPanel(condition="input.layer == 'hauls'",
+      conditionalPanel(condition="input.layer == 'vessels'",
         p("Source: ", a(href="https://www2.gov.scot/Resource/0046/00466802.pdf", "https://www2.gov.scot/Resource/0046/00466802.pdf")),
         p("Reference: Kafas, A., McLay, A., Chimienti, M. and Gubbins, M., ScotMap
           Inshore Fisheries Mapping in Scotland: Recording Fishermen’s use of the
@@ -18,7 +18,8 @@ layerTab <- tabPanel('Historic data',
           )
         ),
       
-      conditionalPanel(condition="input.layer == 'vessels'",
+      conditionalPanel(condition="input.layer == 'hauls'",
+        p('Number of creels hauled per 2x2km square per day'),
         p("Source: ", a(href="http://marine.gov.scot/information/creel-fishing-effort-study", "http://marine.gov.scot/information/creel-fishing-effort-study")),
         p("Reference: Marine Scotland Science, 2017, Creel Fishing Effort Study, Scottish Government")
         ),

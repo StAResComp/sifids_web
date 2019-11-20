@@ -16,7 +16,8 @@ shinyUI(
       uiOutput('daterange'),
       
       # only use every nth track point
-      numericInput('nth', 'Display every nth point', 1)
+      #numericInput('nth', 'Display every nth point', 1)
+      uiOutput('trips')
     ),
     
     # main panel to show map

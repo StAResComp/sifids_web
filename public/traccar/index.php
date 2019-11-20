@@ -24,6 +24,10 @@ try {
         throw new \Exception('Data not in JSON format');
     }
     
+    file_put_contents('/tmp/traccar.json', 
+                      json_encode($data, JSON_PRETTY_PRINT), 
+                      FILE_APPEND);
+    
     //print json_encode($data, JSON_PRETTY_PRINT);
     // convert input JSON string to object and add to database
     addData($data);

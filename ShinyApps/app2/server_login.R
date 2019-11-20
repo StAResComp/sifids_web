@@ -30,6 +30,9 @@ observe({
       else if (user$role == 'admin') {
           tabs_admin()
         }
+      else if (user$role == 'fisher') {
+          tabs_fisher()
+        }
       else {
         tabs()
       }

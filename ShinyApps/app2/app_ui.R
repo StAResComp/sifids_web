@@ -62,3 +62,17 @@ tabs_admin <- function() {
     layerTab
     )
 }
+
+# show tabs for fishers
+tabs_fisher <- function() {
+  navbarPage(
+    theme = "style.css", # style.css loads shinytheme("flatly")
+    title = "SIFIDS Application",
+    id = "navbar", 
+    introTab,
+    catchTab,
+    trackFisherTab,
+    effortTab,
+    layerTab
+    )
+}

@@ -5,7 +5,7 @@ library(leaflet)
 shinyServer(function(input, output) {
     # get database connection details
     deets <- scan('~/.pgpass', sep=':', what=list('', '', '', '', ''))
-    i <- 3 # which line to use
+    i <- 1 # which line to use
     
     # make connection
     conn = dbConnect(dbDriver('PostgreSQL'), 
@@ -26,23 +26,35 @@ shinyServer(function(input, output) {
     
     # get track data for given vessel in given date range
     tracks <- reactive({
+        if (!is.null(input$trips)) {
+          query <- sprintf("SELECT t.trip_id, t.lat AS lat, t.lon AS long FROM vessels INNER JOIN uploads USING (vessel_id) INNER JOIN tracks AS t USING (upload_id) WHERE trip_id IN (%s) ORDER BY t.time_stamp ASC;",
+            paste(input$trips, collapse=','))
+          dbGetQuery(conn, query)
+        }
+      })
+    
+    # get trips made by vessel between dates
+    trips <- reactive({
         if (!is.null(input$dates[1]) && !is.null(input$dates[2])) {
-          query <- sprintf("SELECT t.lat AS lat, t.lon AS long FROM vessels INNER JOIN uploads USING (vessel_id) INNER JOIN tracks AS t USING (upload_id) WHERE vessel_id = %d AND t.lat IS NOT NULL AND t.lon IS NOT NULL AND t.time_stamp BETWEEN '%s' AND '%s' ORDER BY t.time_stamp ASC;",
+          query <- sprintf("SELECT t.trip_id, TO_CHAR(MIN(t.time_stamp), 'YYYY-MM-DD HH24:MI') || ' - ' || TO_CHAR(MAX(t.time_stamp), 'YYYY-MM-DD HH24:MI') AS rep FROM vessels INNER JOIN uploads USING (vessel_id) INNER JOIN tracks AS t USING (upload_id) WHERE trip_id IS NOT NULL AND vessel_id = %d AND t.time_stamp BETWEEN '%s' AND '%s' GROUP BY t.trip_id;",
             strtoi(input$vessel, 10), input$dates[1], input$dates[2])
           dbGetQuery(conn, query)
         }
       })
 
-    # filter out all but every nth track point
-    nthTrack <- reactive({
-        trackArr = tracks()
-        trackArr[c(TRUE, rep(FALSE, input$nth)), ]
+    # output trips
+    output$trips <- renderUI({
+        tripsArr <- trips()
+        trips <- tripsArr$trip_id
+        names(trips) <- tripsArr$rep
+        
+        selectInput('trips', 'Trips', trips, multiple=TRUE)
       })
     
     # output vessels as select control
     output$vessels <- renderUI({
         # get list of vessels
-        query = 'SELECT vessel_id, vessel_name FROM vessels WHERE active = 1;'
+        query = 'SELECT v.vessel_id, v.vessel_name FROM vessels AS v INNER JOIN uploads USING (vessel_id) INNER JOIN tracks USING (upload_id) WHERE active = 1 GROUP BY v.vessel_id, v.vessel_name;'
         vesselArr <- dbGetQuery(conn, query)
         # turn into named 1d array
         vessels = vesselArr$vessel_id
@@ -60,12 +72,17 @@ shinyServer(function(input, output) {
     
     # output map
     output$map <- renderLeaflet({
-        trackArr <- nthTrack() # get every nth track point for map
+        trackArr <- tracks()
         
         if (length(trackArr) > 0) {
-          leaflet() %>% 
-          addTiles() %>%
-          addPolylines(lat=trackArr$lat, lng=trackArr$long)
+          map <- leaflet()
+          map <- addTiles(map)
+          
+          for (trip in split(trackArr, trackArr$trip_id)) {
+            map <- addPolylines(map, lat=trip$lat, lng=trip$long)
+          }
+          
+          map
         }
       })
 })

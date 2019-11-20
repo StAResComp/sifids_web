@@ -66,6 +66,14 @@ class DB {
         return $results;
     }
     //}}}
+    
+    // start new transaction
+    public function begin() { //{{{
+        if (!$this->conn->inTransaction()) {
+            $this->conn->beginTransaction();
+        }
+    }
+    //}}}
 
     // commit if in transaction, otherwise roll back and throw exception
     public function commit() { //{{{

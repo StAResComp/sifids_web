@@ -1,2 +1,10 @@
 # ignore log directory
 log/*
+# ignore a bunch of apps
+wp6/*
+app/*
+fish1/*
+layers/*
+maj/*
+wp2/*
+traccar/*

@@ -26,13 +26,25 @@ CREATE TABLE tracks (
   fishing INTEGER DEFAULT 0,
   lat NUMERIC,
   lon NUMERIC,
-  accuracy NUMERIC
+  accuracy NUMERIC,
+  trip_id INTEGER REFERENCES trips (trip_id),
+  tripped BOOLEAN
 --  geom GEOMETRY(POINT, 4326),
 --  PRIMARY KEY (upload_id, time_stamp)
 );
 
 CREATE INDEX track_time_stamp_idx ON tracks (time_stamp);
 --CREATE INDEX track_gist_idx ON tracks USING GIST(geom);
+
+DROP TABLE IF EXISTS trips;
+CREATE TABLE trips (
+  trip_id SERIAL PRIMARY KEY,
+  vessel_id INTEGER REFERENCES vessels (vessel_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  start_time_stamp TIMESTAMP WITH TIME ZONE,
+  end_time_stamp TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX trip_idx ON trips (vessel_id, start_time_stamp, end_time_stamp);
 
 DROP TABLE IF EXISTS animals CASCADE;
 CREATE TABLE animals (

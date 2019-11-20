@@ -28,9 +28,9 @@ function addData(\stdClass $data) { //{{{
     if (isset($data->device->name) &&
         isset($data->device->uniqueId) &&
         isset($data->position->protocol)) {
-        if (!$results = $db->addDevice($data->device->name,
-                                       $data->device->uniqueId,
-                                       $data->position->protocol)) {
+        if (!$results = $db->addTraccarDevice($data->device->name,
+                                              $data->device->uniqueId,
+                                              $data->position->protocol)) {
             throw new \Exception('Problem adding device');
         }
         
@@ -43,17 +43,17 @@ function addData(\stdClass $data) { //{{{
     // add attributes
     foreach ($attributes as $name) {
         if (isset($data->position->attributes->$name)) {
-            $db->addAttribute($name, 
-                              (float) $data->position->attributes->$name,
-                              $timestamp, $deviceID);
+            $db->addTraccarAttribute($name, 
+                                     (float) $data->position->attributes->$name,
+                                     $timestamp, $deviceID);
         }
     }
     
     // add track point
-    if ($results = $db->addTrack($deviceID,
-                                 $data->position->latitude,
-                                 $data->position->longitude,
-                                 $timestamp)) {
+    if ($results = $db->addTraccarTrack($deviceID,
+                                        $data->position->latitude,
+                                        $data->position->longitude,
+                                        $timestamp)) {
         $tripID = $results[0][0];
         
         printf("%d\t%d\t%f\t%f\t%s\n",

@@ -85,6 +85,22 @@ tracksHeat <- reactive({
   })
 #}}}
 
+# get track using vessels and dates for heat map (for fishers)
+tracksFisherHeat <- reactive({ 
+    #{{{
+    # need dates
+    dates <- getDateRange(input$tracksDates)
+    if (is.null(dates)) {
+      return()
+    }
+
+    dbProc('heatMapDataFisher', 
+      list(user$id, 
+        getArray(input$tracksVessels), 
+        dates[1], dates[2]))
+  })
+#}}}
+
 # get grids visited more than once
 tracksGrids <- reactive({ 
     #{{{
@@ -101,7 +117,7 @@ tracksGrids <- reactive({
   })
 #}}}
 
-# get trips made by vessel between dates
+# get trips made by vessel between dates (for all except fishers)
 tracksTrips <- reactive({ 
     #{{{
     # need dates
@@ -111,6 +127,7 @@ tracksTrips <- reactive({
       return()
     }
 
+    # get trips
     dbProc('tripEstimates', 
       list(user$id, 
         getArray(input$tracksVessels), 
@@ -118,10 +135,32 @@ tracksTrips <- reactive({
   })
 #}}}
 
+# get trips made by vessel between dates (for fishers)
+tracksFisherTrips <- reactive({ 
+    #{{{
+    # need dates
+    dates <- getDateRange(input$tracksDates)
+    if (is.null(dates) || is.na(dates)) {
+      return()
+    }
+
+    # get trips
+    df <- dbProc('tripEstimates', 
+      list(user$id, 
+        getArray(input$tracksVessels), 
+        dates[1], dates[2]))
+    
+    # now only want columns 1 and 2
+    return(df[c(1,2)])
+  })
+#}}}
+
 # are estimates available for user's tracks
 estimatesAvailable <- reactive({
+    #{{{
     dbProc('trackDataAvailable', list(user$id))
   })
+#}}}
 
 # are events available for user's tracks
 eventsAvailable <- reactive({
@@ -130,11 +169,22 @@ eventsAvailable <- reactive({
   })
 #}}}
 
-# output trips
+# output trips (all users except fishers)
 output$tracksTrips <- DT::renderDataTable({ 
     #{{{
     datatable(tracksTrips(),
       colnames=c('Trip ID', 'Trip', 'Creels (low)*', 'Creels (high)*', 'Distance (km)*'),
+      rownames=FALSE,
+      options=list(columnDefs=list(list(visible=FALSE, targets=c(0))))
+      )
+  })
+#}}}
+
+# output trips (just fishers)
+output$tracksFisherTrips <- DT::renderDataTable({ 
+    #{{{
+    datatable(tracksFisherTrips(),
+      colnames=c('Trip ID', 'Trip'),
       rownames=FALSE,
       options=list(columnDefs=list(list(visible=FALSE, targets=c(0))))
       )
@@ -159,7 +209,7 @@ output$tracksDaterange <- renderUI({
   })
 #}}}
 
-# type of map
+# type of map (for all except fishers)
 output$tracksMapType <- renderUI({ 
     #{{{
     # initial choices
@@ -178,6 +228,18 @@ output$tracksMapType <- renderUI({
   })
 #}}}
 
+# type of map (just for fishers)
+output$tracksFisherMapType <- renderUI({ 
+    #{{{
+    # choices
+    choices <- c('Track data' = 'tracks',
+      'Heat map showing time spent' = 'heat_all')
+    
+    radioButtons('tracksMapType', 'Type of map',
+      choices)
+  })
+#}}}
+
 # fishing event options
 output$tracksFishingEvents <- renderUI({
     #{{{
@@ -188,6 +250,24 @@ output$tracksFishingEvents <- renderUI({
     
     checkboxGroupInput("tracksEvents", "Fishing events to display",
       choices = choices)
+  })
+#}}}
+
+# button for clearing tracks has been clicked
+observeEvent(input$clearTracks, {
+    #{{{
+    # get table proxy and select NULL rows
+    table <- dataTableProxy('tracksTrips')
+    selectRows(table, NULL)
+  })
+#}}}
+
+# button for clearing tracks has been clicked (fishers)
+observeEvent(input$clearFisherTracks, {
+    #{{{
+    # get table proxy and select NULL rows
+    table <- dataTableProxy('tracksFisherTrips')
+    selectRows(table, NULL)
   })
 #}}}
 
@@ -213,12 +293,16 @@ observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, {
     
     tracks <- c()
     events <- c()
+    latestPoints <- c()
     
     # have new tracks to fetch from database
     if (length(newTracks) > 0) {
       # join selected tracks and get data
       trkArr <- sprintf('{%s}', paste(newTracks, collapse=","))
       tracks <- dbProc('tracksFromTrips', list(user$id, trkArr))
+      
+      # get latest points (today) for vessels (in any selected trips)
+      latestPoints <- dbProc('latestPoints', list(user$id, trkArr))
       
       # make sure that some tracks were returned
       if (length(tracks) == 0) {
@@ -242,23 +326,138 @@ observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, {
 
     # have tracks, so add them to map
     if (length(tracks) > 0) {
-      pal <- colorFactor(c("blue", "red"), c(1, 2))
+      pal <- colorFactor(c('blue', 'red'), c(1, 2))
       
       # split tracks into trips
       for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
         group <- paste0('trip', trip[1,]$trip_id)
         
         # find segments in each trip
-        # data finds all tracks in trip which belong to segment plus the next track
+        # finds all tracks in trip which belong to segment plus the next track
         for (seg in levels(as.factor(trip$segment))) {
+          segTracks <- trip[trip$segment == seg | trip$last_segment == seg,]
+          colour <- trip$activity[trip$segment == seg][1]
+          
+#          if (colour == 1 && length(segTracks[[1]]) < 5) {
+#            colour <- 3 - colour
+#          }
+          
           map <- addPolylines(map,
-            data=trip[trip$segment == seg | trip$last_segment == seg,],
+            data=segTracks,
             lat=~latitude, lng=~longitude,
-            color=pal(trip$activity[trip$segment == seg]),
+            color=pal(colour),
             opacity=1, group=group, 
             options=pathOptions(pane="tracks"))
         }
       }
+    }
+    
+    # mark latest points for vessels
+    if (length(latestPoints) > 0) {
+      map <- addMarkers(map,
+        data=latestPoints,
+        lat=~latitude, lng=~longitude,
+        label=~paste(vessel_name, ' ', time_stamp),
+        group=~paste0('trip', trip_id))
+    }
+    
+    if (length(events) > 0) {
+      pal <- colorFactor("RdYlBu", events$activity_name)
+      
+      # add legend for events
+      map <- clearControls(map)
+      map <- addLegend(map, 'bottomright', pal=pal, values=events$activity_name, opacity=1)
+      
+      for (trip in split(events, list(events$trip_id), drop=TRUE)) {
+        # use same group as for trip tracks
+        group <- paste0('trip', trip[1,]$trip_id)
+        #cat(file=stderr(), paste('events', length(trip$latitude), collapse=","))
+        
+        map <- addCircleMarkers(map,
+          lat=trip$latitude, lng=trip$longitude, 
+          radius=15, stroke=F,
+          color=pal(trip$activity_name),
+          fillOpacity=1, group=group,
+          clusterOptions = markerClusterOptions())
+      }
+    }
+    
+    clearTracks(selectedTracks)
+  })
+#}}}
+
+# map showing tracks (for fishers), use ignoreNULL=F so that event is observed even when no rows selected
+observeEvent(input$tracksFisherTrips_rows_selected, ignoreNULL=FALSE, { 
+    #{{{
+    # get trips in the table and keep just the ones selected in table
+    data <- tracksTrips()
+    if (length(data) == 0) {
+      return()
+    }
+    
+    data <- data[input$tracksFisherTrips_rows_selected,]
+    selectedTracks <- data$trip_id
+
+    if (is.null(input$tracksMapType) || input$tracksMapType != 'tracks') {
+      clearTracks(selectedTracks)
+      return()
+    }
+    
+    # only get tracks for trips not already selected
+    newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
+    
+    tracks <- c()
+    events <- c()
+    latestPoints <- c()
+    
+    # have new tracks to fetch from database
+    if (length(newTracks) > 0) {
+      # join selected tracks and get data
+      trkArr <- sprintf('{%s}', paste(newTracks, collapse=","))
+      tracks <- dbProc('tracksFromTrips', list(user$id, trkArr))
+      
+      # get latest points (today) for vessels (in any selected trips)
+      latestPoints <- dbProc('latestPoints', list(user$id, trkArr))
+
+      # make sure that some tracks were returned
+      if (length(tracks) == 0) {
+        return()
+      }
+      
+      # have fishing events
+      if (!is.null(input$tracksEvents)) {
+        eventsArr <- sprintf('{%s}', paste(input$tracksEvents, collapse=","))
+        events <- dbProc('eventsFromTrips', list(user$id, trkArr, eventsArr))
+      }
+    }
+
+    # get map proxy
+    map <- leafletProxy("tracksMap")
+
+    # have tracks, so add them to map
+    if (length(tracks) > 0) {
+      #pal <- colorFactor(c("blue"), c(1))
+      
+      # split tracks into trips
+      for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
+        group <- paste0('trip', trip[1,]$trip_id)
+        
+        map <- addPolylines(map,
+          data=trip,
+          lat=~latitude, lng=~longitude,
+          color='blue',
+          opacity=1, group=group, 
+          options=pathOptions(pane="tracks"))
+      }
+    }
+
+    # mark latest points for vessels
+    if (length(latestPoints) > 0) {
+      map <- addMarkers(map,
+        data=latestPoints,
+        lat=~latitude, lng=~longitude,
+        label=~paste(vessel_name, ' ', time_stamp),
+        group=~paste0('trip', trip_id))
     }
     
     if (length(events) > 0) {
@@ -295,17 +494,19 @@ observeEvent(input$tracksMap_groups, {
     # substrate layer for track map
     group = tracksOverlayGroups[['substrate']]
     if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
-      habitat <- readRDS("habitat.rds")
-      
-      factpal <- colorFactor(brewer.pal(n=11, name="Spectral") , habitat$folk_d50) 
-      p_popup <- paste0("<strong>substrate: </strong>", habitat$folk_d50)
-      
-      map <- addPolygons(map, data=habitat, 
-        stroke = FALSE, fillColor = ~factpal(folk_d50), 
-        fillOpacity = 0.5, smoothFactor = 0.5,  popup = p_popup, group=group,
-        options=pathOptions(pane="idhabitat"))
-      
-      tracksLayers$loaded <- c(tracksLayers$loaded, group)
+      withProgress(message='Loading substrate data', value=0, {
+          habitat <- readRDS("habitat.rds")
+          
+          factpal <- colorFactor(brewer.pal(n=11, name="Spectral") , habitat$folk_d50) 
+          p_popup <- paste0("<strong>substrate: </strong>", habitat$folk_d50)
+          
+          map <- addPolygons(map, data=habitat, 
+            stroke = FALSE, fillColor = ~factpal(folk_d50), 
+            fillOpacity = 0.5, smoothFactor = 0.5,  popup = p_popup, group=group,
+            options=pathOptions(pane="idhabitat"))
+          
+          tracksLayers$loaded <- c(tracksLayers$loaded, group)
+        })
     }
 
     # Scottish Marine Regions
@@ -381,20 +582,22 @@ observeEvent(input$tracksMap_groups, {
     # bathymetry
     group = tracksOverlayGroups[['bathymetry']]
     if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
-      data <- raster('bathymetry.nc')
-      depths <- values(data)
-      depths <- depths[depths < 0]
-      pal <- colorBin(palette='Blues', domain=depths, 
-        bins=c(0, -5, -10, -15, -20, -25, -50, -75, -100, -2000), 
-        na.color = "transparent")
-      
-      map <- addRasterImage(map, data,
-        colors=pal, opacity=0.5,
-        group=group)
-      
-      map <- addLegend(map, pal=pal, values=depths, title="Depth (m)", group=group)
-      
-      tracksLayers$loaded <- c(tracksLayers$loaded, group)
+      withProgress(message='Loading bathymetry data', value=0, {
+          data <- raster('bathymetry.nc')
+          depths <- values(data)
+          depths <- depths[depths < 0]
+          pal <- colorBin(palette='Blues', domain=depths, 
+            bins=c(0, -5, -10, -15, -20, -25, -50, -75, -100, -2000), 
+            na.color = "transparent")
+          
+          map <- addRasterImage(map, data,
+            colors=pal, opacity=0.5,
+            group=group)
+          
+          map <- addLegend(map, pal=pal, values=depths, title="Depth (m)", group=group)
+          
+          tracksLayers$loaded <- c(tracksLayers$loaded, group)
+        })
     }
     
     # OSM base layer
@@ -407,18 +610,18 @@ observeEvent(input$tracksMap_groups, {
     }
     
     # Bathymetry base layer
-    group = tracksBaseGroups[['bathymetry']]
-    if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
-      map <- addProviderTiles(map, providers$Esri.OceanBasemap, group=group,
-        options=providerTileOptions(updateWhenZooming=F, updateWhenIdle=T))
-      
-      tracksLayers$loaded <- c(tracksLayers$loaded, group)
-    }
+#    group = tracksBaseGroups[['bathymetry']]
+#    if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
+#      map <- addProviderTiles(map, providers$Esri.OceanBasemap, group=group,
+#        options=providerTileOptions(updateWhenZooming=F, updateWhenIdle=T))
+#      
+#      tracksLayers$loaded <- c(tracksLayers$loaded, group)
+#    }
     
   })
 #}}}
 
-# heat map showing time spent
+# heat map showing time spent hauling
 observe({ 
     #{{{
     # get map proxy
@@ -438,6 +641,33 @@ observe({
     selectRows(table, NULL)
 
     tracks <- tracksHeat()
+    
+    if (length(tracks) > 0) {
+      map <- addHeatmap(map, lng=~long, lat=~lat, group="heat", blur=25, max=0.1, radius=15, data=tracks)
+    }
+  })
+#}}}
+
+# heat map showing time spent (for fishers)
+observe({ 
+    #{{{
+    # get map proxy
+    map <- leafletProxy("tracksMap")
+    map <- clearGroup(map, group="heat_all")
+    
+    if (is.null(input$tracksMapType) || input$tracksMapType != 'heat_all') {
+      return()
+    }
+
+    # clear any tracks
+    for (track in tracksSelected$tracks) {
+      map <- clearGroup(map, group=track)
+    }
+
+    table = dataTableProxy('tracksFisherTrips')
+    selectRows(table, NULL)
+
+    tracks <- tracksFisherHeat()
     
     if (length(tracks) > 0) {
       map <- addHeatmap(map, lng=~long, lat=~lat, group="heat", blur=25, max=0.1, radius=15, data=tracks)
@@ -511,6 +741,16 @@ output$tracksDownload <- downloadHandler(
   
   content = function(file) {
     write.csv(tracksTrips(), file)
+  }
+  )
+#}}}
+
+output$tracksFisherDownload <- downloadHandler(
+  #{{{
+  filename = 'tracks.csv',
+  
+  content = function(file) {
+    write.csv(tracksFisherTrips(), file)
   }
   )
 #}}}
