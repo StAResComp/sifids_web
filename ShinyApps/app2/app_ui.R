@@ -72,7 +72,7 @@ tabs_fisher <- function() {
     introTab,
     catchTab,
     trackFisherTab,
-    effortTab,
+#    effortTab, # don't show fishers the metrics tab
     layerTab
     )
 }
