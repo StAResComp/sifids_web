@@ -899,7 +899,6 @@ BEGIN
   
   -- no old vessel, or vessel has changed
   IF old_vessel_id IS NULL OR in_vessel_id IS NULL OR old_vessel_id <> in_vessel_id THEN
-    RAISE NOTICE 'vessel changed: %', in_vessel_id;
     -- set to_date to now
     UPDATE "Devices"
        SET to_date = NOW()
@@ -916,7 +915,6 @@ BEGIN
     GET DIAGNOSTICS updated = ROW_COUNT;
   -- same vessel, so update fields that could have changed
   ELSE
-    RAISE NOTICE 'vessel not changed: %', in_vessel_id;
     UPDATE "Devices"
        SET device_power_id = in_device_power_id,
            device_active = in_device_active,
