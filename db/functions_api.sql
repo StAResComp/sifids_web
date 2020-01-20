@@ -43,60 +43,100 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get details on device
-CREATE OR REPLACE FUNCTION apiGetDevice ( --{{{
-  in_device_id INTEGER
+-- get details on unique device
+CREATE OR REPLACE FUNCTION apiGetUniqueDevice ( --{{{
+  in_unique_device_id INTEGER
 )
 RETURNS TABLE (
-  device_id INTEGER,
-  vessel_id INTEGER,
+  unique_device_id INTEGER,
   device_name TEXT,
   device_string TEXT,
   serial_number VARCHAR(255),
   model_id INTEGER,
-  telephone VARCHAR(255),
-  device_power_id INTEGER,
-  device_active SMALLINT,
-  engineer_notes TEXT
+  telephone VARCHAR(255)
 )
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT d.device_id, d.vessel_id, 
+    SELECT d.unique_device_id,
            d.device_name, d.device_string, d.serial_number, 
-           d.model_id, d.telephone, d.device_power_id, 
-           d.device_active, d.engineer_notes
-      FROM "Devices" AS d
-     WHERE d.device_id = in_device_id
+           d.model_id, d.telephone
+      FROM entities."UniqueDevices" AS d
+     WHERE d.unique_device_id = in_unique_device_id
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get details on all devices
+-- get details on all unique devices
+CREATE OR REPLACE FUNCTION apiGetUniqueDevices ( --{{{
+)
+RETURNS TABLE (
+  unique_device_id INTEGER,
+  device_name TEXT,
+  device_string TEXT,
+  serial_number VARCHAR(255),
+  model_id INTEGER,
+  telephone VARCHAR(255)
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT d.unique_device_id,
+           d.device_name, d.device_string, d.serial_number, 
+           d.model_id, d.telephone
+      FROM entities."UniqueDevices" AS d
+  ORDER BY d.device_name ASC
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+-- get details on all device (on vessel)
+CREATE OR REPLACE FUNCTION apiGetDevice ( --{{{
+  in_unique_device_id INTEGER
+)
+RETURNS TABLE (
+  device_id INTEGER,
+  vessel_id INTEGER,
+  device_power_id INTEGER,
+  device_active SMALLINT,
+  engineer_notes TEXT,
+  unique_device_id INTEGER,
+  device_name TEXT
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT d.device_id, d.vessel_id, d.device_power_id, d.device_active, d.engineer_notes, d.unique_device_id, ud.device_name
+      FROM "Devices" AS d
+INNER JOIN entities."UniqueDevices" AS ud USING (unique_device_id)
+     WHERE d.unique_device_id = in_unique_device_id
+       AND d.to_date IS NULL
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+-- get details on all devices (on vessels)
 CREATE OR REPLACE FUNCTION apiGetDevices ( --{{{
 )
 RETURNS TABLE (
   device_id INTEGER,
   vessel_id INTEGER,
-  device_name TEXT,
-  device_string TEXT,
-  serial_number VARCHAR(255),
-  model_id INTEGER,
-  telephone VARCHAR(255),
   device_power_id INTEGER,
   device_active SMALLINT,
-  engineer_notes TEXT
+  engineer_notes TEXT,
+  unique_device_id INTEGER,
+  device_name TEXT
 )
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT d.device_id, d.vessel_id, 
-           d.device_name, d.device_string, d.serial_number, 
-           d.model_id, d.telephone, d.device_power_id, 
-           d.device_active, d.engineer_notes
+    SELECT d.device_id, d.vessel_id, d.device_power_id, d.device_active, d.engineer_notes, d.unique_device_id, ud.device_name
       FROM "Devices" AS d
-  ORDER BY d.device_name ASC
+INNER JOIN entities."UniqueDevices" AS ud USING (unique_device_id)
+  ORDER BY ud.device_name ASC
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -804,38 +844,89 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
--- update device
-CREATE OR REPLACE FUNCTION apiUpdateDevice ( --{{{
-  in_device_id INTEGER,
-  in_vessel_id INTEGER,
+-- update unique device
+CREATE OR REPLACE FUNCTION apiUpdateUniqueDevice ( --{{{
+  in_unique_device_id INTEGER,
   in_device_name TEXT,
   in_device_string TEXT,
   in_serial_number VARCHAR(255),
   in_model_id INTEGER,
-  in_telephone VARCHAR(255),
-  in_device_power_id INTEGER,
-  in_device_active SMALLINT,
-  in_engineer_notes TEXT
+  in_telephone VARCHAR(255)
 )
 RETURNS TABLE (
   updated INTEGER
 )
 AS $FUNC$
 BEGIN
-  UPDATE "Devices"
-     SET vessel_id = in_vessel_id,
-         device_name = in_device_name,
+  UPDATE entities."UniqueDevices"
+     SET device_name = in_device_name,
          device_string = in_device_string,
          serial_number = in_serial_number,
          model_id = in_model_id,
-         telephone = in_telephone,
-         device_power_id = in_device_power_id,
-         device_active = in_device_active,
-         engineer_notes = in_engineer_notes
-   WHERE device_id = in_device_id;
+         telephone = in_telephone
+   WHERE unique_device_id = in_unique_device_id;
   
   -- get number of updated rows
   GET DIAGNOSTICS updated = ROW_COUNT;
+  
+  RETURN QUERY
+    SELECT updated;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- update device (on vessel)
+CREATE OR REPLACE FUNCTION apiUpdateDevice ( --{{{
+  in_vessel_id INTEGER,
+  in_unique_device_id INTEGER,
+  in_device_power_id INTEGER,
+  in_device_active INTEGER,
+  in_engineer_notes TEXT
+)
+RETURNS TABLE (
+  updated INTEGER
+)
+AS $FUNC$
+DECLARE
+  old_vessel_id INTEGER;
+BEGIN
+  -- get current vessel to see if it is different
+  SELECT vessel_id
+    INTO old_vessel_id
+    FROM "Devices"
+   WHERE unique_device_id = in_unique_device_id
+     AND to_date IS NULL;
+  
+  -- no old vessel, or vessel has changed
+  IF old_vessel_id IS NULL OR in_vessel_id IS NULL OR old_vessel_id <> in_vessel_id THEN
+    RAISE NOTICE 'vessel changed: %', in_vessel_id;
+    -- set to_date to now
+    UPDATE "Devices"
+       SET to_date = NOW()
+     WHERE unique_device_id = in_unique_device_id
+       AND to_date IS NULL;
+     
+    -- create new device for different vessel
+    INSERT 
+      INTO "Devices"
+           (vessel_id, device_power_id, device_active, engineer_notes, unique_device_id, from_date)
+    VALUES (in_vessel_id, in_device_power_id, in_device_active, in_engineer_notes, in_unique_device_id, NOW() + INTERVAL '1 second');
+    
+    -- get number of updated rows
+    GET DIAGNOSTICS updated = ROW_COUNT;
+  -- same vessel, so update fields that could have changed
+  ELSE
+    RAISE NOTICE 'vessel not changed: %', in_vessel_id;
+    UPDATE "Devices"
+       SET device_power_id = in_device_power_id,
+           device_active = in_device_active,
+           engineer_notes = in_engineer_notes
+     WHERE unique_device_id = in_unique_device_id
+       AND to_date IS NULL;
+     
+    -- get number of updated rows
+    GET DIAGNOSTICS updated = ROW_COUNT;
+  END IF;
   
   RETURN QUERY
     SELECT updated;
@@ -1015,14 +1106,31 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
--- add device
-CREATE OR REPLACE FUNCTION apiAddDevice ( --{{{
-  in_vessel_id INTEGER,
+-- add unique device
+CREATE OR REPLACE FUNCTION apiAddUniqueDevice ( --{{{
   in_device_name TEXT,
   in_device_string TEXT,
   in_serial_number VARCHAR(255),
   in_model_id INTEGER,
-  in_telephone VARCHAR(255),
+  in_telephone VARCHAR(255)
+)
+RETURNS TABLE (
+  inserted INTEGER
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    INSERT INTO entities."UniqueDevices" (device_name, device_string, serial_number, model_id, telephone)
+         VALUES (in_device_name, in_device_string, in_serial_number, in_model_id, in_telephone)
+      RETURNING unique_device_id;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- add device (on vessel)
+CREATE OR REPLACE FUNCTION apiAddDevice ( --{{{
+  in_vessel_id INTEGER,
+  in_unique_device_id INTEGER,
   in_device_power_id INTEGER,
   in_device_active SMALLINT,
   in_engineer_notes TEXT
@@ -1033,9 +1141,10 @@ RETURNS TABLE (
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    INSERT INTO "Devices" (vessel_id, device_name, device_string, serial_number, model_id, telephone, device_power_id, device_active, engineer_notes)
-         VALUES (in_vessel_id, in_device_name, in_device_string, in_serial_number, in_model_id, in_telephone, in_device_power_id, in_device_active, in_engineer_notes)
-      RETURNING device_id;
+    INSERT 
+      INTO "Devices" (vessel_id, device_power_id, device_active, engineer_notes, unique_device_id)
+    VALUES (in_vessel_id, in_unique_device_id, in_device_power_id, in_device_active, in_engineer_notes)
+ RETURNING device_id;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
@@ -1177,8 +1286,8 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
 -- delete device
-CREATE OR REPLACE FUNCTION apiDeleteDevice ( --{{{
-  in_device_id INTEGER
+CREATE OR REPLACE FUNCTION apiDeleteUniqueDevice ( --{{{
+  in_unique_device_id INTEGER
 )
 RETURNS TABLE (
   deleted INTEGER
@@ -1186,8 +1295,8 @@ RETURNS TABLE (
 AS $FUNC$
 BEGIN
   DELETE
-    FROM "Devices"
-   WHERE device_id = in_device_id;
+    FROM entities."UniqueDevices"
+   WHERE unique_device_id = in_unique_device_id;
    
   -- get number of deleted rows
   GET DIAGNOSTICS deleted = ROW_COUNT;

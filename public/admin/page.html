@@ -29,7 +29,8 @@
               <div class="nav nav-tabs" id="navtab" role="tablist">
                 <a class="nav-link" id="users_tab" href="#users_content" role="tab" data-toggle="tab" aria-controls="users_content" aria-selected="true">Users</a>
                 <a class="nav-link" id="vessels_tab" href="#vessels_content" role="tab" data-toggle="tab"aria-controls="vessels_content" aria-selected="false">Vessels</a>
-                <a class="nav-link" id="devices_tab" href="#devices_content" role="tab" data-toggle="tab"aria-controls="devices_content" aria-selected="false">Devices</a>
+                <a class="nav-link" id="unique_devices_tab" href="#unique_devices_content" role="tab" data-toggle="tab" aria-controls="unique_devices_content" aria-selected="false">Unique devices</a>
+                <!--a class="nav-link" id="devices_tab" href="#devices_content" role="tab" data-toggle="tab" aria-controls="devices_content" aria-selected="false">Devices (on vessels)</a-->
                 <a class="nav-link" id="entities_tab" href="#entities_content" role="tab" data-toggle="tab"aria-controls="entities_content" aria-selected="false">Entities</a>
               </div>
             </nav>
@@ -74,9 +75,25 @@
                 </div>
               </div>
               
-              <!-- devices controls -->
+              <!-- unique devices controls -->
+              <div class="tab-pane" id="unique_devices_content" role="tabpanel" aria-labelledby="unique_devices_tab">
+                <h2>Unique devices</h2>
+                <div class="row">
+                  <div class="col-md-3 list" id="uniqueDevices">
+                    <img src="loading.gif"/>
+                  </div>
+                  <div class="col-md-6">
+                    <form id="uniqueDeviceForm" class="api" data-id_field="unique_device_id" data-use_form="uniqueDeviceForm" data-entity="unique_devices" data-refresh="uniqueDevices">
+                    </form>
+                    <form id="deviceForm" class="api" data-id_field="unique_device_id" data-use_form="uniqueDeviceForm" data-entity="unique_devices/devices" data-refresh="devices">
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <!-- devices (on vessels) controls 
               <div class="tab-pane" id="devices_content" role="tabpanel" aria-labelledby="devices_tab">
-                <h2>Devices</h2>
+                <h2>Devices (on vessels)</h2>
                 <div class="row">
                   <div class="col-md-3 list" id="devices">
                     <img src="loading.gif"/>
@@ -86,7 +103,7 @@
                     </form>
                   </div>
                 </div>
-              </div>
+              </div-->
               
               <!-- various entities controls -->
               <div class="tab-pane" id="entities_content" role="tabpanel" aria-labelledby="entities_tab">

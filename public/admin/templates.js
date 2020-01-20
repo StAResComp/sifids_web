@@ -242,16 +242,16 @@ let templates = {
      ],
      //}}}
 
-     // devices list
-     'devices': {'<>': 'div', 'html': //{{{
+     // unique devices list
+     'uniqueDevices': {'<>': 'div', 'html': //{{{
                function() {
-                    return entityDiv('device', 'devicesList', 'device_id', 'device_name', dbData.devices);
+                    return entityDiv('unique_device', 'uniqueDevicesList', 'unique_device_id', 'device_name', dbData.uniqueDevices);
                }
      },
      //}}}
 
-     // device form
-     'deviceForm': //{{{
+     // unique device form
+     'uniqueDeviceForm': //{{{
      [
       {'<>': 'div', 'class': 'form-group', 'html': 
                 [
@@ -262,20 +262,6 @@ let templates = {
                            ]
                  }
                 ]
-      },
-      {'<>': 'div', 'class': 'form-group', 'html': 
-           [
-            {'<>': 'label', 'for': 'vessel_id', 'class': 'col-md-6 control-label', 'text': 'Vessel'},
-            {'<>': 'div', 'class': 'col-md-9', 'html':
-                      [
-                       {'<>': 'select', 'class': 'form-control', 'id': 'vessel_id', 'name': 'vessel_id', 'html':
-                            function() {
-                                 return select(dbData.vessels, dbData.deviceForm[0], 'vessel_id', 'vessel_name');
-                            }
-                       }
-                      ]
-            }
-           ]
       },
       {'<>': 'div', 'class': 'form-group', 'html': 
                 [
@@ -304,7 +290,7 @@ let templates = {
                            [
                             {'<>': 'select', 'class': 'form-control', 'id': 'model_id', 'name': 'model_id', 'html':
                                  function() {
-                                      return select(dbData.deviceModels, dbData.deviceForm[0], 'model_id', 'model_name');
+                                      return select(dbData.deviceModels, dbData.uniqueDeviceForm[0], 'model_id', 'model_name');
                                  }
                             }
                            ]
@@ -317,6 +303,35 @@ let templates = {
                  {'<>': 'div', 'class': 'col-md-9', 'html':
                            [
                             {'<>': 'input', 'type': 'text', 'class': 'form-control', 'id': 'telephone', 'placeholder': 'Telephone number of device', 'name': 'telephone', 'value': '${telephone}'}
+                           ]
+                 }
+                ]
+      },
+      {'<>': 'div', 'class': 'form-group', 'html': function() { return submitDelete('unique device', 'uniqueDeviceForm', 'unique_device_id'); }}
+     ],
+     //}}}
+     
+     // devices (on vessels) list
+     'devices': {'<>': 'div', 'html': //{{{
+               function() {
+                    return entityDiv('device', 'devicesList', 'device_id', 'device_name', dbData.devices);
+               }
+     },
+     //}}}
+     
+     // device (on vessel) form
+     'deviceForm': //{{{
+     [
+      {'<>': 'div', 'class': 'form-group', 'html': 
+                [
+                 {'<>': 'label', 'for': 'vessel_id', 'class': 'col-md-6 control-label', 'text': 'Vessel'},
+                 {'<>': 'div', 'class': 'col-md-9', 'html':
+                           [
+                            {'<>': 'select', 'class': 'form-control', 'id': 'vessel_id', 'name': 'vessel_id', 'html':
+                                 function() {
+                                      return select(dbData.vessels, dbData.deviceForm[0], 'vessel_id', 'vessel_name');
+                                 }
+                            }
                            ]
                  }
                 ]
@@ -349,13 +364,13 @@ let templates = {
                 [
                  {'<>': 'label', 'for': 'engineer_notes', 'class': 'col-md-6 control-label', 'text': 'Engineer notes'},
                  {'<>': 'div', 'class': 'col-md-9', 'html':
-                           [
-                            {'<>': 'textarea', 'class': 'form-control', 'id': 'engineer_notes', 'placeholder': 'Notes made by engineer', 'name': 'engineer_notes', 'text': '${engineer_notes}'}
-                           ]
+                           function () {
+                                return textarea(dbData.deviceForm[0], 'engineer_notes', 'Notes made by engineer');
+                           }
                  }
                 ]
       },
-      {'<>': 'div', 'class': 'form-group', 'html': function() { return submitDelete('device', 'deviceForm', 'device_id'); }}
+      {'<>': 'div', 'class': 'form-group', 'html': function() { return submitDelete('device');}}//, 'deviceForm', 'device_id'); }}
      ],
      //}}}
 
@@ -557,6 +572,15 @@ let templates = {
      //}}}
 };
 
+function textarea(form, id, placeholder) { //{{{
+     let text = undefined !== form ? form[id] : '';
+     let html = [
+                 {'<>': 'textarea', 'class': 'form-control', 'id': id, 'placeholder': placeholder, 'name': id, 'text': text}
+                ];
+     return json2html.transform({}, html);
+}
+//}}}
+
 // controls for submit/delete record
 function submitDelete(entity, form, id) { //{{{
      let html = 
@@ -587,7 +611,7 @@ function select(list, form, id, display) { //{{{
      list.forEach(function(d) {
           if (!d[id]) {
           }
-          else if (d[id] == form[id]) {
+          else if (undefined !== form && d[id] == form[id]) {
                html += json2html.transform(d, selected);
           }
           else {
@@ -633,7 +657,7 @@ function checkbox(form, id, value) { //{{{
      
      let html = '';
      
-     if (form[id] == value) {
+     if (undefined !== form && form[id] == value) {
           checked.value = value;
           html += json2html.transform({}, checked);
      }
@@ -646,7 +670,7 @@ function checkbox(form, id, value) { //{{{
 }
 //}}}
 
-// entityDiv('user', 'usersList', 'user_id', 'user_name')
+// P (for new) and UL (for existing) entities
 function entityDiv(entity, listID, id, display, data) { //{{{
      let li = {'<>': 'li', 'html':
           [

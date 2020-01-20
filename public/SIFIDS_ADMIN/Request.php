@@ -10,6 +10,7 @@ class Request {
     
     private $controllers = array('users' => 'User', 
                                  'vessels' => 'Vessel',
+                                 'unique_devices' => 'UniqueDevice',
                                  'devices' => 'Device',
                                  'projects' => 'Project',
                                  'fishery_offices' => 'FisheryOffice',

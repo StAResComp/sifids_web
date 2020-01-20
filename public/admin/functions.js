@@ -17,7 +17,7 @@ let fetch = [
              {'id': 'deviceModels', 'url': ['device_models'], 'useData': {}},
              {'id': 'devicePowers', 'url': ['device_powers']},
              {'id': 'deviceProtocols', 'url': ['device_protocols']},
-             {'id': 'devices', 'url': ['devices'], 'useData': {}}
+             {'id': 'uniqueDevices', 'url': ['unique_devices'], 'useData': {}}
             ];
 
 // fields that should be arrays, e.g. multiple select fields
@@ -31,6 +31,8 @@ function update(data, d, useData) { //{{{
 
      // update UI with new data
      if (templates.hasOwnProperty(d)) {
+          console.log('updating ' + d);
+          console.log(useData === undefined ? dbData[d] : useData);
           // use useData if passed, otherwise use data
           let el = $('#' + d);
           el.html('');
@@ -128,12 +130,18 @@ function loadEntity(event) { //{{{
                update(undefined, 'vesselProjectsForm');
           }
           else {
-               api.get(['vessels', id, 'vessel_projects'], 'vesselProjectsForm', {});
+               api.get(['vessels', id, 'vessel_projects'], {}, 'vesselProjectsForm', {});
           }
           break;
           
-     case 'device':
-          api.get(['devices', id], {}, 'deviceForm');
+     case 'unique_device':
+          api.get(['unique_devices', id], {}, 'uniqueDeviceForm');
+          if ('new' == id) {
+               update(undefined, 'deviceForm');
+          }
+          else {
+               api.get(['unique_devices', id, 'devices'], {}, 'deviceForm', {});
+          }
           break;
           
      case 'vessel_owner':
