@@ -31,7 +31,9 @@ BEGIN
                               WHERE uv.user_id = u.user_id)
              )
         -- admin/researcher, so get all vessels
-          OR (ut.user_type_name IN ('admin', 'researcher')))
+          OR (ut.user_type_name IN ('admin', 'researcher'))
+        -- what about fishery officers?
+            )
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -669,7 +671,7 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, 
            (COALESCE(
-             CASE WHEN user_type_name IN ('admin', 'fisher') THEN vessel_pln
+             CASE WHEN user_type_name IN ('admin', 'fisher') THEN vessel_pln || ' ' || device_name::VARCHAR(32)
                   WHEN user_type_name IN ('researcher', 'fishery officer') THEN vessel_code::VARCHAR(16)
              END,
              'no vessel'
@@ -680,6 +682,7 @@ BEGIN
       FROM "Tracks"
 INNER JOIN "Trips" AS t USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN analysis."Estimates" AS low ON (t.trip_id = low.trip_id AND low.estimate_type_id = 1)
  LEFT JOIN analysis."Estimates" AS high ON (t.trip_id = high.trip_id AND high.estimate_type_id = 2)
  LEFT JOIN analysis."Estimates" AS dist ON (t.trip_id = dist.trip_id AND dist.estimate_type_id = 3)
@@ -698,7 +701,7 @@ INNER JOIN "Devices" USING (device_id)
          OR vessel_id = ANY(in_vessels)
            )
        AND trip_date BETWEEN in_min_date AND in_max_date
-  GROUP BY ut.user_type_name, t.trip_id, v.vessel_id
+  GROUP BY ut.user_type_name, t.trip_id, device_name, v.vessel_id
     HAVING COUNT(*) > 1 -- exclude trips with only 1 track
   ORDER BY trip_date DESC, vessel_pln ASC
 ;
@@ -1418,6 +1421,7 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
 -- get attribute values for given vessels between given dates
+-- TODO change distance attributes, so that they only return max per day
 CREATE OR REPLACE FUNCTION attributePlotData ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
