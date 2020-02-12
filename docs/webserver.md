@@ -41,5 +41,5 @@ Server compiled with....
 ## PHP
 
 See [phpinfo.html](phpinfo.html) for details. If viewing the phpinfo page on
-Github, try pasting its URL into [https://htmlpreview.github.io](HTML Preview)
+Github, try pasting its URL into [HTML Preview](https://htmlpreview.github.io)
 to make it more legible.
