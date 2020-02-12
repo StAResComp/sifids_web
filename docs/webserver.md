@@ -40,4 +40,6 @@ Server compiled with....
 
 ## PHP
 
-See [phpinfo.html](phpinfo.html) for details.
+See [phpinfo.html](phpinfo.html) for details. If viewing the phpinfo page on
+Github, try pasting its URL into [https://htmlpreview.github.io](HTML Preview)
+to make it more legible.
