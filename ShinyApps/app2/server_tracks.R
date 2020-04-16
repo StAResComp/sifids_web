@@ -154,8 +154,8 @@ mapTrackDots <- function(tracks) { #{{{
       lat=trip$latitude, lng=trip$longitude, 
       radius=15, stroke=F,
       color=pal(trip$activity),
-      fillOpacity=1, group=group,
-      clusterOptions=markerClusterOptions())
+      fillOpacity=1, group=group)
+#      clusterOptions=markerClusterOptions())
   }
 }
 #}}}
