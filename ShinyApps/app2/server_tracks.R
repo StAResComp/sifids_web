@@ -145,13 +145,18 @@ mapTrackDots <- function(tracks) { #{{{
   map <- leafletProxy("tracksMap")
   
   pal <- colorFactor(c('blue', 'red'), c(1, 2))
-  
-  map <- addPolylines(map,
-    data=tracks,
-    lat=~latitude, lng=~longitude,
-    color=pal(~activity),
-    opacity=1, group=group, 
-    options=pathOptions(pane="tracks"))
+
+  for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
+    # use same group as for trip tracks
+    group <- paste0('trip', trip[1, ]$trip_id)
+    
+    map <- addCircleMarkers(map,
+      lat=trip$latitude, lng=trip$longitude, 
+      radius=15, stroke=F,
+      color=pal(trip$activity),
+      fillOpacity=1, group=group,
+      clusterOptions=markerClusterOptions())
+  }
 }
 #}}}
 
