@@ -152,7 +152,7 @@ mapTrackDots <- function(tracks) { #{{{
     
     map <- addCircleMarkers(map,
       lat=trip$latitude, lng=trip$longitude, 
-      radius=15, stroke=F,
+      radius=5, stroke=F,
       color=pal(trip$activity),
       fillOpacity=1, group=group)
 #      clusterOptions=markerClusterOptions())
