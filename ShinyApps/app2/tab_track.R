@@ -12,7 +12,7 @@ trackTab <- tabPanel('Track data',
       uiOutput('tracksDaterange'),
       
       conditionalPanel(
-        condition="input.tracksMapType == 'tracks'",
+        condition="input.tracksMapType == 'tracks' || input.tracksMapType == 'analysed_tracks'",
         
         # options for fishing events
         uiOutput('tracksFishingEvents'),
