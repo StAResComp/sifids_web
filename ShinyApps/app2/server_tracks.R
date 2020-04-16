@@ -149,7 +149,7 @@ mapTrackDots <- function(tracks) { #{{{
   map <- addPolylines(map,
     data=tracks,
     lat=~latitude, lng=~longitude,
-    color=pal(activity),
+    color=pal(~activity),
     opacity=1, group=group, 
     options=pathOptions(pane="tracks"))
 }
