@@ -175,8 +175,9 @@ mapTracksAndEvents <- function(newTracks) { #{{{
     }
     
     mapTrackLines(tracks)
+  }
   # analysed tracks as dots
-  } else if (input$tracksMapType == 'analysed_tracks') {
+  else if (input$tracksMapType == 'analysed_tracks') {
     tracks <- dbProc('analysedTracksFromTrips', list(user$id, trkArr))
     
     if (length(tracks) == 0) {
@@ -189,7 +190,7 @@ mapTracksAndEvents <- function(newTracks) { #{{{
   # get latest points (today) for vessels (in any selected trips)
   latestPoints <- dbProc('latestPoints', list(user$id, trkArr))
   
-  maplatestPoints(latestPoints)
+  mapLatestPoints(latestPoints)
   
   # have fishing events
   if (!is.null(input$tracksEvents)) {
