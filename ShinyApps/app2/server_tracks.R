@@ -62,6 +62,145 @@ clearTracks <- function(selectedTracks) {
 }
 #}}}
 
+# plot events on map
+mapEvents <- function(events) { #{{{
+  if (length(events) == 0) {
+    return()
+  }
+
+  # get map proxy
+  map <- leafletProxy("tracksMap")
+  
+  pal <- colorFactor("RdYlBu", events$activity_name)
+  
+  # add legend for events
+  map <- clearControls(map)
+  map <- addLegend(map, 'bottomright', pal=pal, 
+    values=events$activity_name, opacity=1)
+  
+  for (trip in split(events, list(events$trip_id), drop=TRUE)) {
+    # use same group as for trip tracks
+    group <- paste0('trip', trip[1,]$trip_id)
+    
+    map <- addCircleMarkers(map,
+      lat=trip$latitude, lng=trip$longitude, 
+      radius=15, stroke=F,
+      color=pal(trip$activity_name),
+      fillOpacity=1, group=group,
+      clusterOptions=markerClusterOptions())
+  }
+}
+#}}}
+
+# plot latest points for vessels on map
+mapLatestPoints <- function(latestPoints) { #{{{
+  # mark latest points for vessels
+  if (length(latestPoints) == 0) {
+    return()
+  }
+
+  # get map proxy
+  map <- leafletProxy("tracksMap")
+
+  map <- addMarkers(map,
+    data=latestPoints,
+    lat=~latitude, lng=~longitude,
+    label=~paste(vessel_name, ' ', time_stamp),
+    group=~paste0('trip', trip_id))
+}
+#}}}
+
+# draw tracks as lines on map
+mapTrackLines <- function(tracks) { #{{{
+  # have tracks, so add them to map
+  if (length(tracks) == 0) {
+    return()
+  }
+
+  # get map proxy
+  map <- leafletProxy("tracksMap")
+  
+  # split tracks into trips
+  for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
+    group <- paste0('trip', trip[1,]$trip_id)
+    
+    map <- addPolylines(map,
+      data=trip,
+      lat=~latitude, lng=~longitude,
+      color='blue',
+      opacity=1, group=group, 
+      options=pathOptions(pane="tracks"))
+  }
+}
+#}}}
+
+# draw tracks as dots on map
+mapTrackDots <- function(tracks) { #{{{
+  # have tracks, so add them to map
+  if (length(tracks) == 0) {
+    return()
+  }
+
+  # get map proxy
+  map <- leafletProxy("tracksMap")
+  
+  pal <- colorFactor(c('blue', 'red'), c(1, 2))
+  
+  map <- addPolylines(map,
+    data=tracks,
+    lat=~latitude, lng=~longitude,
+    color=pal(activity),
+    opacity=1, group=group, 
+    options=pathOptions(pane="tracks"))
+}
+#}}}
+
+# pull together data for tracks, latest points and events
+# and draw them on map
+mapTracksAndEvents <- function(newTracks) { #{{{
+  # have new tracks to fetch from database
+  if (length(newTracks) == 0) {
+    return()
+  }
+  
+  # join selected tracks and get data
+  trkArr <- sprintf('{%s}', paste(newTracks, collapse=","))
+  
+  # unanalysed tracks as lines
+  if (input$tracksMapType == 'tracks') {
+    tracks <- dbProc('tracksFromTrips', list(user$id, trkArr))
+    
+    if (length(tracks) == 0) {
+      return()
+    }
+    
+    mapTrackLines(tracks)
+  # analysed tracks as dots
+  } else if (input$tracksMapType == 'analysed_tracks') {
+    tracks <- dbProc('analysedTracksFromTrips', list(user$id, trkArr))
+    
+    if (length(tracks) == 0) {
+      return()
+    }
+    
+    mapTrackDots(tracks)
+  }
+  
+  # get latest points (today) for vessels (in any selected trips)
+  latestPoints <- dbProc('latestPoints', list(user$id, trkArr))
+  
+  maplatestPoints(latestPoints)
+  
+  # have fishing events
+  if (!is.null(input$tracksEvents)) {
+    eventsArr <- sprintf('{%s}', paste(input$tracksEvents, collapse=","))
+    events <- dbProc('eventsFromTrips', list(user$id, trkArr, eventsArr))
+    
+    mapEvents(events)
+  }
+}
+#}}}
+
 # get first/last dates of tracks for given vessel
 tracksDates <- reactive({
     #{{{
@@ -213,7 +352,8 @@ output$tracksDaterange <- renderUI({
 output$tracksMapType <- renderUI({ 
     #{{{
     # initial choices
-    choices <- c('Track data and hauling activity' = 'tracks')
+    choices <- c('Track data' = 'tracks', 
+      'Analysed track data' = 'analysed_tracks')
     
     # find out whether track estimates are available
     estimates <- estimatesAvailable()
@@ -283,7 +423,8 @@ observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, {
     data <- data[input$tracksTrips_rows_selected,]
     selectedTracks <- data$trip_id
 
-    if (is.null(input$tracksMapType) || input$tracksMapType != 'tracks') {
+    if (is.null(input$tracksMapType) || 
+        (input$tracksMapType != 'tracks' && input$tracksMapType != 'analysed_tracks')) {
       clearTracks(selectedTracks)
       return()
     }
@@ -291,96 +432,8 @@ observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, {
     # only get tracks for trips not already selected
     newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
     
-    tracks <- c()
-    events <- c()
-    latestPoints <- c()
-    
-    # have new tracks to fetch from database
-    if (length(newTracks) > 0) {
-      # join selected tracks and get data
-      trkArr <- sprintf('{%s}', paste(newTracks, collapse=","))
-      tracks <- dbProc('tracksFromTrips', list(user$id, trkArr))
-      
-      # get latest points (today) for vessels (in any selected trips)
-      latestPoints <- dbProc('latestPoints', list(user$id, trkArr))
-      
-      # make sure that some tracks were returned
-      if (length(tracks) == 0) {
-        return()
-      }
-      
-      # segmentise tracks using activity
-      tracks$segment <- cumsum(c(1, diff(tracks$activity) != 0))
-      # each track point remembers the segment of the last point
-      tracks$last_segment <- dplyr::lag(tracks$segment)
-      
-      # have fishing events
-      if (!is.null(input$tracksEvents)) {
-        eventsArr <- sprintf('{%s}', paste(input$tracksEvents, collapse=","))
-        events <- dbProc('eventsFromTrips', list(user$id, trkArr, eventsArr))
-      }
-    }
-
-    # get map proxy
-    map <- leafletProxy("tracksMap")
-
-    # have tracks, so add them to map
-    if (length(tracks) > 0) {
-      pal <- colorFactor(c('blue', 'red'), c(1, 2))
-      
-      # split tracks into trips
-      for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
-        group <- paste0('trip', trip[1,]$trip_id)
-        
-        # find segments in each trip
-        # finds all tracks in trip which belong to segment plus the next track
-        for (seg in levels(as.factor(trip$segment))) {
-          segTracks <- trip[trip$segment == seg | trip$last_segment == seg,]
-          colour <- trip$activity[trip$segment == seg][1]
-          
-#          if (colour == 1 && length(segTracks[[1]]) < 5) {
-#            colour <- 3 - colour
-#          }
-          
-          map <- addPolylines(map,
-            data=segTracks,
-            lat=~latitude, lng=~longitude,
-            color=pal(colour),
-            opacity=1, group=group, 
-            options=pathOptions(pane="tracks"))
-        }
-      }
-    }
-    
-    # mark latest points for vessels
-    if (length(latestPoints) > 0) {
-      map <- addMarkers(map,
-        data=latestPoints,
-        lat=~latitude, lng=~longitude,
-        label=~paste(vessel_name, ' ', time_stamp),
-        group=~paste0('trip', trip_id))
-    }
-    
-    if (length(events) > 0) {
-      pal <- colorFactor("RdYlBu", events$activity_name)
-      
-      # add legend for events
-      map <- clearControls(map)
-      map <- addLegend(map, 'bottomright', pal=pal, values=events$activity_name, opacity=1)
-      
-      for (trip in split(events, list(events$trip_id), drop=TRUE)) {
-        # use same group as for trip tracks
-        group <- paste0('trip', trip[1,]$trip_id)
-        #cat(file=stderr(), paste('events', length(trip$latitude), collapse=","))
-        
-        map <- addCircleMarkers(map,
-          lat=trip$latitude, lng=trip$longitude, 
-          radius=15, stroke=F,
-          color=pal(trip$activity_name),
-          fillOpacity=1, group=group,
-          clusterOptions = markerClusterOptions())
-      }
-    }
+    # put track lines, latest points and events on map
+    mapTracksAndEvents(newTracks)
     
     clearTracks(selectedTracks)
   })
@@ -405,81 +458,9 @@ observeEvent(input$tracksFisherTrips_rows_selected, ignoreNULL=FALSE, {
     
     # only get tracks for trips not already selected
     newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
-    
-    tracks <- c()
-    events <- c()
-    latestPoints <- c()
-    
-    # have new tracks to fetch from database
-    if (length(newTracks) > 0) {
-      # join selected tracks and get data
-      trkArr <- sprintf('{%s}', paste(newTracks, collapse=","))
-      tracks <- dbProc('tracksFromTrips', list(user$id, trkArr))
-      
-      # get latest points (today) for vessels (in any selected trips)
-      latestPoints <- dbProc('latestPoints', list(user$id, trkArr))
 
-      # make sure that some tracks were returned
-      if (length(tracks) == 0) {
-        return()
-      }
-      
-      # have fishing events
-      if (!is.null(input$tracksEvents)) {
-        eventsArr <- sprintf('{%s}', paste(input$tracksEvents, collapse=","))
-        events <- dbProc('eventsFromTrips', list(user$id, trkArr, eventsArr))
-      }
-    }
-
-    # get map proxy
-    map <- leafletProxy("tracksMap")
-
-    # have tracks, so add them to map
-    if (length(tracks) > 0) {
-      #pal <- colorFactor(c("blue"), c(1))
-      
-      # split tracks into trips
-      for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
-        group <- paste0('trip', trip[1,]$trip_id)
-        
-        map <- addPolylines(map,
-          data=trip,
-          lat=~latitude, lng=~longitude,
-          color='blue',
-          opacity=1, group=group, 
-          options=pathOptions(pane="tracks"))
-      }
-    }
-
-    # mark latest points for vessels
-    if (length(latestPoints) > 0) {
-      map <- addMarkers(map,
-        data=latestPoints,
-        lat=~latitude, lng=~longitude,
-        label=~paste(vessel_name, ' ', time_stamp),
-        group=~paste0('trip', trip_id))
-    }
-    
-    if (length(events) > 0) {
-      pal <- colorFactor("RdYlBu", events$activity_name)
-      
-      # add legend for events
-      map <- clearControls(map)
-      map <- addLegend(map, 'bottomright', pal=pal, values=events$activity_name, opacity=1)
-      
-      for (trip in split(events, list(events$trip_id), drop=TRUE)) {
-        # use same group as for trip tracks
-        group <- paste0('trip', trip[1,]$trip_id)
-        #cat(file=stderr(), paste('events', length(trip$latitude), collapse=","))
-        
-        map <- addCircleMarkers(map,
-          lat=trip$latitude, lng=trip$longitude, 
-          radius=15, stroke=F,
-          color=pal(trip$activity_name),
-          fillOpacity=1, group=group,
-          clusterOptions = markerClusterOptions())
-      }
-    }
+    # put track lines, latest points and events on map
+    mapTracksAndEvents(newTracks)
     
     clearTracks(selectedTracks)
   })
