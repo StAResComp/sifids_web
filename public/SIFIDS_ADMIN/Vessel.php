@@ -6,8 +6,8 @@ namespace SIFIDS_ADMIN;
 
 class Vessel extends Controller {
     protected $fields = array('vessel_id', 'vessel_name', 'vessel_code', 
-                              'vessel_pln', 'owner_id', 'fo_id', 
-                              'vessel_active');
+                              'vessel_pln', 'vessel_length', 'gear_id', 'animal_id',
+                              'owner_id', 'fo_id', 'vessel_active');
     
     // GET method
     protected function get() { //{{{
@@ -48,6 +48,9 @@ class Vessel extends Controller {
                                          $this->body->vessel_name,
                                          $this->body->vessel_code,
                                          $this->body->vessel_pln,
+                                         $this->body->vessel_length,
+                                         (int) $this->body->gear_id ? $this->body->gear_id : null,
+                                         (int) $this->body->animal_id ? $this->body->animal_id : null,
                                          (int) $this->body->owner_id ? $this->body->owner_id : null,
                                          (int) $this->body->fo_id ? $this->body->fo_id : null,
                                          (int) $this->body->vessel_active);
@@ -79,6 +82,9 @@ class Vessel extends Controller {
           $this->db->apiAddVessel($this->body->vessel_name,
                                   $this->body->vessel_code,
                                   $this->body->vessel_pln,
+                                  $this->body->vessel_length,
+                                  (int) $this->body->gear_id ? $this->body->gear_id : null,
+                                  (int) $this->body->animal_id ? $this->body->animal_id : null,
                                   (int) $this->body->owner_id ? $this->body->owner_id : null,
                                   (int) $this->body->fo_id ? $this->body->fo_id : null,
                                   (int) $this->body->vessel_active);

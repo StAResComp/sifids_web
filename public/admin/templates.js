@@ -181,6 +181,44 @@ let templates = {
       },
       {'<>': 'div', 'class': 'form-group', 'html': 
            [
+            {'<>': 'label', 'for': 'vessel_length', 'class': 'col-md-6 control-label', 'text': 'Vessel length (m)'},
+            {'<>': 'div', 'class': 'col-md-9', 'html':
+                      [
+                       {'<>': 'input', 'type': 'text', 'class': 'form-control', 'id': 'vessel_length', 'placeholder': 'Length vessel (m)', 'name': 'vessel_length', 'value': '${vessel_length}'}
+                      ]
+            }
+           ]
+      },
+      {'<>': 'div', 'class': 'form-group', 'html': 
+           [
+            {'<>': 'label', 'for': 'gear_id', 'class': 'col-md-6 control-label', 'text': 'Vessel gear'},
+            {'<>': 'div', 'class': 'col-md-9', 'html':
+                      [
+                       {'<>': 'select', 'class': 'form-control', 'id': 'gear_id', 'name': 'gear_id', 'html':
+                            function() {
+                                 return select(dbData.gears, dbData.vesselForm[0], 'gear_id', 'gear_name');
+                            }
+                       }
+                      ]
+            }
+           ]
+      },
+      {'<>': 'div', 'class': 'form-group', 'html': 
+           [
+            {'<>': 'label', 'for': 'animal_id', 'class': 'col-md-6 control-label', 'text': 'Main target species'},
+            {'<>': 'div', 'class': 'col-md-9', 'html':
+                      [
+                       {'<>': 'select', 'class': 'form-control', 'id': 'animal_id', 'name': 'animal_id', 'html':
+                            function() {
+                                 return select(dbData.species, dbData.vesselForm[0], 'animal_id', 'animal_name');
+                            }
+                       }
+                      ]
+            }
+           ]
+      },
+      {'<>': 'div', 'class': 'form-group', 'html': 
+           [
             {'<>': 'label', 'for': 'owner_id', 'class': 'col-md-6 control-label', 'text': 'Vessel owner'},
             {'<>': 'div', 'class': 'col-md-9', 'html':
                       [

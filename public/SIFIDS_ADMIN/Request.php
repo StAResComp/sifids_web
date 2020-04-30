@@ -14,6 +14,8 @@ class Request {
                                  'devices' => 'Device',
                                  'projects' => 'Project',
                                  'fishery_offices' => 'FisheryOffice',
+                                 'species' => 'Species',
+                                 'gears' => 'Gears',
                                  'device_powers' => 'DevicePower',
                                  'protocols' => 'Protocol',
                                  'device_models' => 'DeviceModel',

@@ -13,6 +13,8 @@ let fetch = [
              {'id': 'projects', 'url': ['projects']},
              {'id': 'vesselOwners', 'url': ['vessel_owners']},
              {'id': 'fisheryOffices', 'url': ['fishery_offices']},
+             {'id': 'species', 'url': ['species']},
+             {'id': 'gears', 'url': ['gears']},
              {'id': 'vessels', 'url': ['vessels'], 'useData': {}},
              {'id': 'deviceModels', 'url': ['device_models'], 'useData': {}},
              {'id': 'devicePowers', 'url': ['device_powers']},
