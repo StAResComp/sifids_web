@@ -12,7 +12,10 @@ BEGIN
   RETURN QUERY
     SELECT d.device_id 
       FROM "Devices" AS d
-     WHERE d.device_string = in_device_string
+INNER JOIN entities."UniqueDevices" AS ud USING (unique_device_id)
+     WHERE ud.device_string = in_device_string
+       AND (from_date IS NULL OR from_date < NOW()) -- from date not set, or in the past
+       AND (to_date IS NULL OR to_date > NOW()) -- to date not set, or in the future
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;

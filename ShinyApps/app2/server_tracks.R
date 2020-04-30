@@ -155,7 +155,6 @@ mapTrackDots <- function(tracks) { #{{{
       radius=5, stroke=F,
       color=pal(trip$activity),
       fillOpacity=1, group=group)
-#      clusterOptions=markerClusterOptions())
   }
 }
 #}}}

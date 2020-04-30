@@ -1,6 +1,35 @@
--- stored procedures used by Shiny app
+/****** db/functions_app2.sql
+ * NAME
+ * functions_app2.sql
+ * SYNOPSIS
+ * Stored procedures called by the Shiny app
+ * AUTHOR
+ * Swithun Crowe
+ * CREATION DATE
+ * 20200218
+ ******
+ */
 
--- stored procedure for checking user details
+/****f* functions_app2.sql/
+ * NAME
+ * 
+ * SYNOPSIS
+ * 
+ * ARGUMENTS
+ * RETURN VALUE
+ ******
+ */
+
+
+/****f* functions_app2.sql/appLogin
+ * NAME
+ * appLogin
+ * SYNOPSIS
+ * 
+ * ARGUMENTS
+ * RETURN VALUE
+ ******
+ */
 CREATE OR REPLACE FUNCTION appLogin ( --{{{
   in_username TEXT,
   in_password TEXT
@@ -14,6 +43,9 @@ RETURNS TABLE (
 )
 AS $FUNC$
 BEGIN
+  -- log login attempt
+  INSERT INTO "Logins" (username) VALUES (in_username);
+  
   RETURN QUERY
      SELECT u.user_id, ut.user_type_name, 
             v.vessel_id, v.vessel_name || ' (' || v.vessel_pln || ')', v.vessel_code
@@ -36,7 +68,7 @@ BEGIN
             )
 ;
 END;
-$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
 -- fish 1 catch per species
@@ -825,6 +857,66 @@ INNER JOIN "Devices" USING (device_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
        AND is_valid = 1
+;
+
+  -- get number of rows
+  SELECT (COUNT(*) / 1000)::INTEGER FROM temp_tracks INTO temp_factor;
+
+  -- decide if temp_tracks needs to be thinned
+  IF temp_factor > 1 THEN
+    DELETE 
+      FROM temp_tracks AS t
+     WHERE MOD(t.row_number, temp_factor) <> 0 -- thin using modulo of row number
+       AND t.activity = 1; -- and no fishing activity
+  END IF;
+
+  -- send back (possibly) thinned data
+  RETURN QUERY
+    SELECT t.trip_id, t.latitude, t.longitude, t.activity
+      FROM temp_tracks AS t
+  ORDER BY t.trip_date, t.time_stamp
+;
+
+  -- finished with temp table
+  DROP TABLE temp_tracks
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- get analysed tracks for given trips
+CREATE OR REPLACE FUNCTION analysedTracksFromTrips ( --{{{
+  in_user_id INTEGER,
+  in_trips INTEGER[]
+)
+RETURNS TABLE (
+  trip_id INTEGER,
+  latitude NUMERIC(15,12),
+  longitude NUMERIC(15,12),
+  activity INTEGER
+)
+AS $FUNC$
+DECLARE
+  temp_factor INTEGER;
+BEGIN
+  -- put data into temp table
+  CREATE TEMPORARY TABLE temp_tracks AS
+    SELECT t.trip_id, tr.latitude, tr.longitude, COALESCE(activity_id, 1) AS activity, -- not fishing when no activity present
+           t.trip_date, tr.time_stamp, ROW_NUMBER() OVER (ORDER BY t.trip_date, tr.time_stamp)
+      FROM "Trips" AS t
+INNER JOIN analysis."AnalysedTracks" AS tr USING (trip_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN analysis."TrackAnalysis" USING (track_id)
+ LEFT JOIN "Vessels" AS v USING (vessel_id)
+ LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Users" AS u1 USING (user_id)
+ LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
+ LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+     WHERE (
+            user_type_name IN ('admin', 'researcher')
+         OR u1.user_id = in_user_id
+           ) 
+       AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
 ;
 
   -- get number of rows

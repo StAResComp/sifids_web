@@ -30,7 +30,7 @@ dbProc <- function(proc_name, arg_list) {
   
   # prepare stmt and bind arguments
   stmt <- dbSendQuery(con, sql, arg_list)
-  
+
   # get results
   results <- dbFetch(stmt)
   
