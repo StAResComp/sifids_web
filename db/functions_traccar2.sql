@@ -98,6 +98,19 @@ DECLARE
   old_latitude NUMERIC(15,12);
   old_longitude NUMERIC(15,12);
 BEGIN
+  -- record most recent track point for device
+     INSERT
+       INTO LastPointsForDevices
+            (device_id, time_stamp, latitude, longitude)
+     SELECT device_id, in_time_stamp, in_latitude, in_longitude
+       FROM "Trips"
+      WHERE trip_id = in_trip_id
+ON CONFLICT (device_id) DO 
+     UPDATE 
+        SET time_stamp = EXCLUDED.time_stamp,
+            latitude = EXCLUDED.latitude,
+            longitude = EXCLUDED.longitude;
+   
   -- get most recent point from track
     SELECT t.latitude, t.longitude
       INTO old_latitude, old_longitude
