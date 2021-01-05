@@ -43,8 +43,8 @@ tabs <- function() {
     introTab,
     catchTab,
     trackTab,
-    effortTab,
-    layerTab
+    effortTab#,
+    #layerTab
     )
 }
 
@@ -58,8 +58,8 @@ tabs_admin <- function() {
     adminTab,
     catchTab,
     trackTab,
-    effortTab,
-    layerTab
+    effortTab#,
+    #layerTab
     )
 }
 
@@ -71,8 +71,8 @@ tabs_fisher <- function() {
     id = "navbar", 
     introTab,
     catchTab,
-    trackFisherTab,
+    trackFisherTab#,
 #    effortTab, # don't show fishers the metrics tab
-    layerTab
+    #layerTab
     )
 }
