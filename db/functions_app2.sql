@@ -829,6 +829,7 @@ CREATE OR REPLACE FUNCTION tracksFromTrips ( --{{{
   in_trips INTEGER[]
 )
 RETURNS TABLE (
+  vessel_id INTEGER,
   trip_id INTEGER,
   latitude NUMERIC(15,12),
   longitude NUMERIC(15,12),
@@ -840,7 +841,9 @@ DECLARE
 BEGIN
   -- put data into temp table
   CREATE TEMPORARY TABLE temp_tracks AS
-    SELECT t.trip_id, tr.latitude, tr.longitude, COALESCE(activity_id, 1) AS activity, -- not fishing when no activity present
+    SELECT v.vessel_id,
+           t.trip_id, tr.latitude, tr.longitude, 
+           COALESCE(activity_id, 1) AS activity, -- not fishing when no activity present
            t.trip_date, tr.time_stamp, ROW_NUMBER() OVER (ORDER BY t.trip_date, tr.time_stamp)
       FROM "Trips" AS t
 INNER JOIN "Tracks" AS tr USING (trip_id)
@@ -872,7 +875,7 @@ INNER JOIN "Devices" USING (device_id)
 
   -- send back (possibly) thinned data
   RETURN QUERY
-    SELECT t.trip_id, t.latitude, t.longitude, t.activity
+    SELECT t.vessel_id, t.trip_id, t.latitude, t.longitude, t.activity
       FROM temp_tracks AS t
   ORDER BY t.trip_date, t.time_stamp
 ;
