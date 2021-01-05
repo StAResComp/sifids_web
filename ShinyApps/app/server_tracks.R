@@ -14,13 +14,13 @@ tracksLayers <- reactiveValues(
 
 # names of map groups
 tracksOverlayGroups <- c(
-  'bathymetry' = 'Bathymetry',
+#  'bathymetry' = 'Bathymetry',
   'substrate' = 'Substrate',
   'smr' = 'Scottish Marine Regions',
   'rifgs' = 'RIFGs',
   '3mile' = '3 mile limit',
-  '6mile' = '6 mile limit',
-  'observations' = 'Wildlife observations'
+  '6mile' = '6 mile limit'#,
+#  'observations' = 'Wildlife observations'
   )
 tracksBaseGroups <- c(
   'osm' = 'OSM (MPAs, 12 mile limit)',
@@ -29,14 +29,14 @@ tracksBaseGroups <- c(
 
 # panes and their z-Indexes
 tracksPanes <- c(
-  'bathymetry' = 405,
+#  'bathymetry' = 405,
   'idhabitat' = 410,
   'idregions' = 415,
   'idrifg' = 416,
   'idthree' = 420,
   'idsix' = 421,
-  'tracks' = 450,
-  'observations' = 460
+  'tracks' = 450#,
+#  'observations' = 460
   )
 
 tracksFishingEventOptions <- c(
@@ -119,6 +119,9 @@ mapTrackLines <- function(tracks) { #{{{
 
   # get map proxy
   map <- leafletProxy("tracksMap")
+
+  # different colours for different vessels' tracks
+  pal <- colorFactor("RdYlBu", tracks$vessel_id)  
   
   # split tracks into trips
   for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
@@ -127,7 +130,7 @@ mapTrackLines <- function(tracks) { #{{{
     map <- addPolylines(map,
       data=trip,
       lat=~latitude, lng=~longitude,
-      color='blue',
+      color=pal(trip$vessel_id)
       opacity=1, group=group, 
       options=pathOptions(pane="tracks"))
   }

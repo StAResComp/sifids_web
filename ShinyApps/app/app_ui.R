@@ -2,7 +2,7 @@ source('tab_intro.R', local=TRUE)
 source('tab_catch.R', local=TRUE)
 source('tab_track.R', local=TRUE)
 source('tab_effort.R', local=TRUE)
-source('tab_layers.R', local=TRUE)
+#source('tab_layers.R', local=TRUE)
 source('tab_admin.R', local=TRUE)
 
 # load whatever is in 'page'

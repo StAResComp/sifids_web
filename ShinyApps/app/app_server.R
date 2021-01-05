@@ -4,7 +4,7 @@ appServer <- shinyServer(function(input, output, session) {
     source('server_catch.R', local=TRUE)
     source('server_tracks.R', local=TRUE)
     source('server_effort.R', local=TRUE)
-    source('server_layers.R', local=TRUE)
+#    source('server_layers.R', local=TRUE)
     source('server_admin.R', local=TRUE)
   })
 
