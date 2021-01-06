@@ -130,8 +130,7 @@ mapTrackLines <- function(tracks) { #{{{
     map <- addPolylines(map,
       data=trip,
       lat=~latitude, lng=~longitude,
-      #color=pal(vessel_id),
-      color='blue',
+      color=pal(trip[1,]$vessel_id),
       opacity=1, group=group, 
       options=pathOptions(pane="tracks"))
   }
@@ -554,41 +553,41 @@ observeEvent(input$tracksMap_groups, {
     }
 
     # observations from app
-    group = tracksOverlayGroups[['observations']]
-    if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
-      data <- dbProc('geographyObservations', list())
-      pal <- colorFactor("RdYlBu", data$animal_group)
-      
-      map <- addCircleMarkers(map, lat=data$latitude, lng=data$longitude, 
-        radius=15, color=pal(data$animal_group), stroke=F, fillOpacity=0.8, 
-        popup=paste("<strong>", data$animal_name, "</strong><br/>", data$observation_count),
-        group=group)
-      
-      map <- addLegend(map, pal=pal, values=data$animal_group, title="Animals observed", group=group)
-      
-      tracksLayers$loaded <- c(tracksLayers$loaded, group)
-    }
+#    group = tracksOverlayGroups[['observations']]
+#    if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
+#      data <- dbProc('geographyObservations', list())
+#      pal <- colorFactor("RdYlBu", data$animal_group)
+#      
+#      map <- addCircleMarkers(map, lat=data$latitude, lng=data$longitude, 
+#        radius=15, color=pal(data$animal_group), stroke=F, fillOpacity=0.8, 
+#        popup=paste("<strong>", data$animal_name, "</strong><br/>", data$observation_count),
+#        group=group)
+#      
+#      map <- addLegend(map, pal=pal, values=data$animal_group, title="Animals observed", group=group)
+#      
+#      tracksLayers$loaded <- c(tracksLayers$loaded, group)
+#    }
 
     # bathymetry
-    group = tracksOverlayGroups[['bathymetry']]
-    if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
-      withProgress(message='Loading bathymetry data', value=0, {
-          data <- raster('bathymetry.nc')
-          depths <- values(data)
-          depths <- depths[depths < 0]
-          pal <- colorBin(palette='Blues', domain=depths, 
-            bins=c(0, -5, -10, -15, -20, -25, -50, -75, -100, -2000), 
-            na.color = "transparent")
-          
-          map <- addRasterImage(map, data,
-            colors=pal, opacity=0.5,
-            group=group)
-          
-          map <- addLegend(map, pal=pal, values=depths, title="Depth (m)", group=group)
-          
-          tracksLayers$loaded <- c(tracksLayers$loaded, group)
-        })
-    }
+#    group = tracksOverlayGroups[['bathymetry']]
+#    if (group %in% input$tracksMap_groups && !(group %in% tracksLayers$loaded)) {
+#      withProgress(message='Loading bathymetry data', value=0, {
+#          data <- raster('bathymetry.nc')
+#          depths <- values(data)
+#          depths <- depths[depths < 0]
+#          pal <- colorBin(palette='Blues', domain=depths, 
+#            bins=c(0, -5, -10, -15, -20, -25, -50, -75, -100, -2000), 
+#            na.color = "transparent")
+#          
+#          map <- addRasterImage(map, data,
+#            colors=pal, opacity=0.5,
+#            group=group)
+#          
+#          map <- addLegend(map, pal=pal, values=depths, title="Depth (m)", group=group)
+#          
+#          tracksLayers$loaded <- c(tracksLayers$loaded, group)
+#        })
+#    }
     
     # OSM base layer
     group = tracksBaseGroups[['osm']]

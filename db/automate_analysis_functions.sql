@@ -77,7 +77,6 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
 -- get vessel data for trips on given date
--- not used
 CREATE OR REPLACE FUNCTION vesselsForAnalysis ( --{{{
   in_date DATE
 )
@@ -86,15 +85,23 @@ RETURNS TABLE (
   id VARCHAR(32),
   vessel_id INTEGER,
   vessel_pln VARCHAR(16),
-  vessel_name TEXT
+  vessel_name TEXT,
+  vessel_length NUMERIC(6,3),
+  gear_name VARCHAR(32),
+  animal_code VARCHAR(16)
 )
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT t.trip_id, CONCAT(t.trip_id, t.trip_date)::VARCHAR(32), v.vessel_id, v.vessel_pln, v.vessel_name
+    SELECT t.trip_id, 
+           CONCAT(t.trip_id, t.trip_date)::VARCHAR(32), 
+           v.vessel_id, v.vessel_pln, v.vessel_name, v.vessel_length,
+           g.gear_name, a.animal_code
       FROM "Trips" AS t
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN entities."Gears" AS g USING (gear_id)
+INNER JOIN entities."Animals" AS a USING (animal_id)
      WHERE t.trip_date = in_date;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -245,6 +252,60 @@ BEGIN
   
   RETURN QUERY
     SELECT track_id_var;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- add estimated distance for trip
+CREATE OR REPLACE FUNCTION addDistanceEstimate ( --{{{
+  in_trip_id INTEGER,
+  in_distance NUMERIC
+)
+RETURNS TABLE (
+  trip_id INTEGER
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    INSERT
+      INTO analysis."Estimates"
+           (trip_id, estimate_type_id, estimate_value)
+    SELECT in_trip_id, et.estimate_type_id, in_distance
+      FROM entities."EstimateTypes" AS et
+     WHERE estimate_name = 'distance'
+ RETURNING in_trip_id;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- add creel estimates for trip
+CREATE OR REPLACE FUNCTION addCreelEstimates ( --{{{
+  in_trip_id INTEGER,
+  in_creels NUMERIC,
+  in_creels_low NUMERIC,
+  in_creels_high NUMERIC
+)
+RETURNS TABLE (
+  trip_id INTEGER
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    INSERT
+      INTO analysis."Estimates"
+           (trip_id, estimate_type_id, estimate_value)
+    SELECT in_trip_id, etc.estimate_type_id, in_creels
+      FROM entities."EstimateTypes" AS etc
+     WHERE etc.estimate_name = 'creels'
+     UNION
+    SELECT in_trip_id, etcl.estimate_type_id, in_creels_low
+      FROM entities."EstimateTypes" AS etcl
+     WHERE etcl.estimate_name = 'creels_low'
+     UNION
+    SELECT in_trip_id, etch.estimate_type_id, in_creels_high
+      FROM entities."EstimateTypes" AS etch
+     WHERE etch.estimate_name = 'creels_high'
+ RETURNING in_trip_id;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
