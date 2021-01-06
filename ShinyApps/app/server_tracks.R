@@ -130,8 +130,7 @@ mapTrackLines <- function(tracks) { #{{{
     map <- addPolylines(map,
       data=trip,
       lat=~latitude, lng=~longitude,
-      color=pal(trip$vessel_id),
-      #color='blue',
+      color=pal(trip[1,]$vessel_id),
       opacity=1, group=group, 
       options=pathOptions(pane="tracks"))
   }
