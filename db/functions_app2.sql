@@ -848,8 +848,8 @@ BEGIN
       FROM "Trips" AS t
 INNER JOIN "Tracks" AS tr USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN analysis."TrackAnalysis" USING (track_id)
- LEFT JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
