@@ -121,11 +121,10 @@ mapTrackLines <- function(tracks) { #{{{
   map <- leafletProxy("tracksMap")
   
   # get factors for vessel IDs for track colours
-  #tracks$colour <- as.numeric(factor(df$vessel_id))
-  #tracks$colour <- df$vessel_id
+  tracks$colour <- as.numeric(factor(tracks$vessel_id))
 
   # different colours for different vessels' tracks
-  pal <- colorFactor("RdYlBu", tracks$vessel_id)
+  pal <- colorFactor("RdYlBu", tracks$colour)
   
   # split tracks into trips
   for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
@@ -134,7 +133,7 @@ mapTrackLines <- function(tracks) { #{{{
     map <- addPolylines(map,
       data=trip,
       lat=~latitude, lng=~longitude,
-      color=pal(trip$vessel_id),
+      color=pal(trip$colour),
       opacity=1, group=group, 
       options=pathOptions(pane="tracks"))
   }
