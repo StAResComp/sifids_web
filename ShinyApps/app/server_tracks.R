@@ -121,7 +121,7 @@ mapTrackLines <- function(tracks) { #{{{
   map <- leafletProxy("tracksMap")
   
   # get factors for vessel IDs for track colours
-  tracks$colour <- as.numeric(factor(df$vessel_id))
+  tracks$colour <- as.numeric(factor(tracks$vessel_id))
 
   # different colours for different vessels' tracks
   pal <- colorFactor("RdYlBu", tracks$colour)
