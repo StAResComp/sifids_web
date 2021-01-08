@@ -3,6 +3,7 @@ introTab <- tabPanel("Introduction",
     title="Introducing the Scottish Inshore Fisheries Integrated Data System (SIFIDS) Marine Database",
     fluidRow(
       h1("Introducing the Scottish Inshore Fisheries Integrated Data System (SIFIDS) Marine Database"),
+      h3("Please note that this is a prototypic web portal created for the SIFIDS project. Some of its original functionality has been removed and the portal is for demonstration purposes only."),
       p("Developed by Seascope Research Ltd and University of St Andrews as part of the SIFIDS Project")
       ),
     fluidRow(
