@@ -1,5 +1,5 @@
 # Fish 1 form data
-catchTab <- tabPanel("Fish 1 catch",
+catchTab <- tabPanel("Catch",
   sidebarLayout(
     sidebarPanel(
       h3('Total catch'),
