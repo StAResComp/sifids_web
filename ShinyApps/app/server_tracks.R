@@ -51,7 +51,8 @@ clearTracks <- function(selectedTracks) {
   map <- leafletProxy("tracksMap")
   
   # remove tracks that were selected, but not anymore
-  oldTracks <- tracksSelected$tracks[!(tracksSelected$tracks %in% selectedTracks)]
+  #oldTracks <- tracksSelected$tracks[!(tracksSelected$tracks %in% selectedTracks)]
+  oldTracks <- tracksSelected$tracks
   
   for (group in oldTracks) {
     map <- clearGroup(map, group=paste0('trip', group))
@@ -59,6 +60,8 @@ clearTracks <- function(selectedTracks) {
   
   # remember new selected tracks
   tracksSelected$tracks <- selectedTracks
+  # forget selected tracks
+  #tracksSelected$tracks <- c()
 }
 #}}}
 
@@ -433,20 +436,22 @@ observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, {
     
     data <- data[input$tracksTrips_rows_selected,]
     selectedTracks <- data$trip_id
-
+    
     if (is.null(input$tracksMapType) || 
         (input$tracksMapType != 'tracks' && input$tracksMapType != 'analysed_tracks')) {
       clearTracks(selectedTracks)
       return()
     }
     
+    clearTracks(selectedTracks)
+    
     # only get tracks for trips not already selected
-    newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
+    #newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
     
     # put track lines, latest points and events on map
-    mapTracksAndEvents(newTracks)
+    #mapTracksAndEvents(newTracks)
+    mapTracksAndEvents(selectedTracks)
     
-    clearTracks(selectedTracks)
   })
 #}}}
 
