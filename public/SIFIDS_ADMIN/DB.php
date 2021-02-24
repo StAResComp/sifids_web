@@ -9,6 +9,7 @@ require_once 'dbConfig.php';
 class DB {
     private $conn = null;
     private static $instance = null;
+    private $fetch = \PDO::FETCH_CLASS;
     
     // private constructor - only called by getInstance
     private function __construct() { //{{{
@@ -17,6 +18,12 @@ class DB {
         if (!$this->conn = new \PDO($dsn, SIFIDS_ADMIN_DB_USER, SIFIDS_ADMIN_DB_PASS)) {
             throw new \Exception('Problem connecting to database');
         }
+    }
+    //}}}
+    
+    // set different fetch method
+    public function setFetch(int $fetch) { //{{{
+        $this->fetch = $fetch;
     }
     //}}}
     
@@ -51,8 +58,19 @@ class DB {
         }
         
         // send back results
-        if (false === ($results = $stmt->fetchAll(\PDO::FETCH_CLASS))) {
+        if (false === ($results = $stmt->fetchAll($this->fetch))) {
             $results = new \StdClass();
+        }
+        
+        // add columns if fetching numbered array
+        if (is_array($results) && \PDO::FETCH_NUM == $this->fetch) {
+            $cols = [];
+            for ($i = 0, $l = $stmt->columnCount(); $i < $l; ++ $i) {
+                $meta = $stmt->getColumnMeta($i);
+                $cols[] = $meta['name'];
+            }
+            
+            array_unshift($results, $cols);
         }
         
         return $results;
