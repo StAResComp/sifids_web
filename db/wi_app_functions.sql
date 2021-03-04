@@ -210,11 +210,11 @@ BEGIN
            j.weight, j.DIS, j.BMS, j.numPotsHauled, j.landingDiscardDate, 
            j.buyerTransporterRegLandedToKeeps
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           (activityDate::TIMESTAMP, latitude::NUMERIC(15, 12), longitude::NUMERIC(15, 12),
-            gear::VARCHAR(32), meshSize::VARCHAR(16), species::TEXT, state::VARCHAR(32),
-            presentation::VARCHAR(32), weight::NUMERIC(6, 2), DIS::BOOLEAN, BMS::BOOLEAN,
-            numPotsHauled::INTEGER, landingDiscardDate::TIMESTAMP, 
-            buyerTransporterRegLandedToKeeps::TEXT)
+           (activityDate TIMESTAMP, latitude NUMERIC(15, 12) AS lat, longitude NUMERIC(15, 12) AS lng,
+            gear VARCHAR(32), meshSize VARCHAR(16), species TEXT, state VARCHAR(32),
+            presentation VARCHAR(32), weight NUMERIC(6, 2), DIS BOOLEAN, BMS BOOLEAN,
+            numPotsHauled INTEGER, landingDiscardDate TIMESTAMP, 
+            buyerTransporterRegLandedToKeeps TEXT)
 INNER JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
 INNER JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j.meshSize)
 INNER JOIN entities."Animals" AS a ON (a.animal_name = j.species)
@@ -227,25 +227,25 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
 -- trigger to populate observation tables when observation JSON inserted into raw table
-DROP TRIGGER WIobservation_insert ON app.WIRawObservations;
+DROP TRIGGER IF EXISTS WIobservation_insert ON app.WIRawObservations;
 
 CREATE TRIGGER WIobservation_insert AFTER INSERT ON app.WIRawObservations
 FOR EACH ROW EXECUTE PROCEDURE WIObservationInsert();
 
 -- trigger to populate catch table when catch JSON inserted into raw table
-DROP TRIGGER WIcatch_insert ON app.WIRawCatch;
+DROP TRIGGER IF EXISTS WIcatch_insert ON app.WIRawCatch;
 
 CREATE TRIGGER WIcatch_insert AFTER INSERT ON app.WIRawCatch
 FOR EACH ROW EXECUTE PROCEDURE WICatchInsert();
 
 -- trigger to populate consent table when consent JSON inserted into raw table
-DROP TRIGGER WIconsent_insert ON app.WIRawConsent;
+DROP TRIGGER IF EXISTS WIconsent_insert ON app.WIRawConsent;
 
 CREATE TRIGGER WIconsent_insert AFTER INSERT ON app.WIRawConsent
 FOR EACH ROW EXECUTE PROCEDURE WIConsentInsert();
 
 -- trigger to populate fishing activity table when activity JSON inserted into raw table
-DROP TRIGGER WIactivity_insert ON app.WIRawFishingActivity;
+DROP TRIGGER IF EXISTS WIactivity_insert ON app.WIRawFishingActivity;
 
 CREATE TRIGGER WIactivity_insert AFTER INSERT ON app.WIRawFishingActivity
 FOR EACH ROW EXECUTE PROCEDURE WIFishingActivityInsert();
