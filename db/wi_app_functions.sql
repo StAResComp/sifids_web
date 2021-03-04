@@ -212,12 +212,12 @@ BEGIN
            j.numPotsHauled AS pots_hauled, j.landingDiscardDate AS landing_date, 
            j.buyerTransporterRegLandedToKeeps
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           (activityDate TIMESTAMP, 
+           ("activityDate" TIMESTAMP, 
             latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
-            gear VARCHAR(32), meshSize VARCHAR(16), species TEXT, state VARCHAR(32),
-            presentation VARCHAR(32), weight NUMERIC(6, 2), DIS BOOLEAN, BMS BOOLEAN,
-            numPotsHauled INTEGER, landingDiscardDate TIMESTAMP, 
-            buyerTransporterRegLandedToKeeps TEXT)
+            gear VARCHAR(32), "meshSize" VARCHAR(16), species TEXT, state VARCHAR(32),
+            presentation VARCHAR(32), weight NUMERIC(6, 2), "DIS" BOOLEAN, "BMS" BOOLEAN,
+            "numPotsHauled" INTEGER, "landingDiscardDate" TIMESTAMP, 
+            "buyerTransporterRegLandedToKeeps" TEXT)
 LEFT JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
 LEFT JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j.meshSize)
 LEFT JOIN entities."Animals" AS a ON (a.animal_name = j.species)
