@@ -205,9 +205,9 @@ BEGIN
            (ingest_id, activity_date, lat, lng, gear_id, mesh_size, animal_id,
             state_id, presentation_id, weight, dis, bms, pots_hauled, 
             landing_date, buyer_transporter)
-    SELECT NEW.ingest_id, j.activityDate, j.latitude AS lat, j.longitude AS lng,
+    SELECT NEW.ingest_id, j.activityDate::TIMESTAMP, j.latitude AS lat, j.longitude AS lng,
            g.gear_id, m.mesh_id, a.animal_id, s.state_id, p.presentation_id,
-           j.weight, (j.DIS = 'true')::BOOLEAN, (j.BMS = 'true')::BOOLEAN, 
+           j.weight, j.DIS, j.BMS, 
            j.numPotsHauled, j.landingDiscardDate, 
            j.buyerTransporterRegLandedToKeeps
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
