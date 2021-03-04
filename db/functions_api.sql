@@ -1415,3 +1415,37 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
+-- get data on vessels and devices
+-- delete fishery office
+CREATE OR REPLACE FUNCTION apiVesselInfo () --{{{
+RETURNS TABLE (
+  vessel_name TEXT,
+  vessel_code VARCHAR(32),
+  vessel_pln VARCHAR(16),
+  created TIMESTAMP WITH TIME ZONE,
+  owner_name TEXT,
+  engineer_notes TEXT,
+  from_date TIMESTAMP WITH TIME ZONE,
+  to_date TIMESTAMP WITH TIME ZONE,
+  device_name TEXT,
+  device_string TEXT,
+  serial_number VARCHAR(255),
+  telephone VARCHAR(255),
+  model_name VARCHAR(255)
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+        SELECT v.vessel_name, v.vessel_code, v.vessel_pln, 
+               v.created, o.owner_name, d.engineer_notes, 
+               d.from_date, d.to_date, ud.device_name, ud.device_string, 
+               ud.serial_number, ud.telephone, m.model_name 
+          FROM "Vessels" AS v 
+     LEFT JOIN "VesselOwners" AS o USING (owner_id) 
+     LEFT JOIN "Devices" AS d USING (vessel_id) 
+     LEFT JOIN entities."DevicePower" AS dp ON d.device_power_id = dp.devce_power_id 
+     LEFT JOIN entities."UniqueDevices" AS ud USING (unique_device_id) 
+     LEFT JOIN entities."DeviceModels" AS m USING (model_id);
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
