@@ -63,7 +63,7 @@ CREATE TABLE app.WIFishingActivity (
   lat NUMERIC(15, 12),
   lng NUMERIC(15, 12),
   gear_id INTEGER,
-  mesh_size_id INTEGER,
+  mesh_id INTEGER,
   animal_id INTEGER,
   state_id INTEGER,
   presentation_id INTEGER,

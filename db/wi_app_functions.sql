@@ -202,12 +202,12 @@ AS $FUNC$
 BEGIN
     INSERT
       INTO app.WIFishingActivity
-           (ingest_id, activity_date, lat, lng, gear_id, mesh_size_id, animal_id,
+           (ingest_id, activity_date, lat, lng, gear_id, mesh_id, animal_id,
             state_id, presentation_id, weight, dis, bms, pots_hauled, 
             landing_date, buyer_transporter)
     SELECT NEW.ingest_id, j.activityDate AS activity_date, 
            j.latitude AS lat, j.longitude AS lng,
-           g.gear_id, m.mesh_id AS mesh_size_id, a.animal_id, s.state_id, p.presentation_id,
+           g.gear_id, m.mesh_id, a.animal_id, s.state_id, p.presentation_id,
            j.weight, j.DIS AS dis, j.BMS AS bms, 
            j.numPotsHauled AS pots_hauled, j.landingDiscardDate AS landing_date, 
            j.buyerTransporterRegLandedToKeeps
