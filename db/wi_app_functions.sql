@@ -207,12 +207,12 @@ BEGIN
             landing_date, buyer_transporter)
     SELECT NEW.ingest_id, j.activityDate AS activity_date, 
            j.latitude AS lat, j.longitude AS lng,
-           g.gear_id, m.mesh_id, a.animal_id, s.state_id, p.presentation_id,
+           g.gear_id, m.mesh_id AS mesh_size_id, a.animal_id, s.state_id, p.presentation_id,
            j.weight, j.DIS AS dis, j.BMS AS bms, 
            j.numPotsHauled AS pots_hauled, j.landingDiscardDate AS landing_date, 
            j.buyerTransporterRegLandedToKeeps
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           (activityDate TIMESTAMP AS activity_date, 
+           (activityDate TIMESTAMP, 
             latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             gear VARCHAR(32), meshSize VARCHAR(16), species TEXT, state VARCHAR(32),
             presentation VARCHAR(32), weight NUMERIC(6, 2), DIS BOOLEAN, BMS BOOLEAN,
