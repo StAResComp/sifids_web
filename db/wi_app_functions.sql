@@ -215,11 +215,11 @@ BEGIN
             presentation VARCHAR(32), weight NUMERIC(6, 2), DIS BOOLEAN, BMS BOOLEAN,
             numPotsHauled INTEGER, landingDiscardDate TIMESTAMP, 
             buyerTransporterRegLandedToKeeps TEXT)
-INNER JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
-INNER JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j.meshSize)
-INNER JOIN entities."Animals" AS a ON (a.animal_name = j.species)
-INNER JOIN entities."States" AS s ON (s.state_name = j.state)
-INNER JOIN entities."Presentations" AS p ON (p.presentation_name = j.presentation);
+LEFT JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
+LEFT JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j.meshSize)
+LEFT JOIN entities."Animals" AS a ON (a.animal_name = j.species)
+LEFT JOIN entities."States" AS s ON (s.state_name = j.state)
+LEFT JOIN entities."Presentations" AS p ON (p.presentation_name = j.presentation);
 
     RETURN NULL;
 END;
