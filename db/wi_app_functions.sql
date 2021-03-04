@@ -212,7 +212,7 @@ BEGIN
            j.numPotsHauled AS pots_hauled, j.landingDiscardDate AS landing_date, 
            j.buyerTransporterRegLandedToKeeps
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           (activityDate VARCHAR(32), latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
+           (activityDate TIMESTAMP, latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             gear VARCHAR(32), meshSize VARCHAR(16), species TEXT, state VARCHAR(32),
             presentation VARCHAR(32), weight NUMERIC(6, 2), DIS BOOLEAN, BMS BOOLEAN,
             numPotsHauled INTEGER, landingDiscardDate TIMESTAMP, 
