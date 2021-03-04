@@ -205,12 +205,12 @@ BEGIN
            (ingest_id, activity_date, lat, lng, gear_id, mesh_id, animal_id,
             state_id, presentation_id, weight, dis, bms, pots_hauled, 
             landing_date, buyer_transporter)
-    SELECT NEW.ingest_id, j.activityDate AS activity_date, 
+    SELECT NEW.ingest_id, j."activityDate" AS activity_date, 
            j.latitude AS lat, j.longitude AS lng,
            g.gear_id, m.mesh_id, a.animal_id, s.state_id, p.presentation_id,
-           j.weight, j.DIS AS dis, j.BMS AS bms, 
-           j.numPotsHauled AS pots_hauled, j.landingDiscardDate AS landing_date, 
-           j.buyerTransporterRegLandedToKeeps
+           j.weight, j."DIS" AS dis, j."BMS" AS bms, 
+           j."numPotsHauled" AS pots_hauled, j."landingDiscardDate" AS landing_date, 
+           j."buyerTransporterRegLandedToKeeps"
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
            ("activityDate" TIMESTAMP, 
             latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
@@ -219,7 +219,7 @@ BEGIN
             "numPotsHauled" INTEGER, "landingDiscardDate" TIMESTAMP, 
             "buyerTransporterRegLandedToKeeps" TEXT)
 LEFT JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
-LEFT JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j.meshSize)
+LEFT JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j."meshSize")
 LEFT JOIN entities."Animals" AS a ON (a.animal_name = j.species)
 LEFT JOIN entities."States" AS s ON (s.state_name = j.state)
 LEFT JOIN entities."Presentations" AS p ON (p.presentation_name = j.presentation);
