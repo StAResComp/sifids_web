@@ -38,25 +38,25 @@ BEGIN
   -- catch data
   IF element ? 'caught' THEN
     INSERT 
-      INTO WIRawCatch
+      INTO app.WIRawCatch
            (user_id, raw_json)
     VALUES (user_id, in_json);
   -- observation data
   ELSIF element ? 'behaviour' THEN
     INSERT 
-      INTO WIRawObservations
+      INTO app.WIRawObservations
            (user_id, raw_json)
     VALUES (user_id, in_json);
   -- fishing activity
   ELSIF element ? 'activityDate' THEN
     INSERT 
-      INTO WIRawFishingActivity
+      INTO app.WIRawFishingActivity
            (user_id, raw_json)
     VALUES (user_id, in_json);
   -- consent data
   ELSIF in_json ? 'understoodSheet' THEN
     INSERT 
-      INTO WIRawConsent
+      INTO app.WIRawConsent
            (user_id, raw_json)
     VALUES (user_id, in_json);
   END IF;
@@ -98,7 +98,7 @@ INNER JOIN entities."Animals" AS a
       LOOP
       -- insert single observation, getting observation ID
            INSERT 
-             INTO WIObservations
+             INTO app.WIObservations
                   (ingest_id, animal_id, obs_count, description, obs_date, 
                    lat, lng, notes)
            VALUES (NEW.ingest_id, r.animal_id, r.num, r.description, r."date", 
@@ -108,7 +108,7 @@ INNER JOIN entities."Animals" AS a
              
       -- insert behaviours associated with observation, using observation ID
            INSERT 
-             INTO WIObservationBehaviours
+             INTO app.WIObservationBehaviours
                   (observation_id, behaviour)
            SELECT obs_id, "value"::VARCHAR(64)
              FROM JSON_ARRAY_ELEMENTS_TEXT(r.behaviour);
@@ -133,7 +133,7 @@ RETURNS TRIGGER
 AS $FUNC$
 BEGIN
     INSERT
-      INTO WICatch
+      INTO app.WICatch
            (ingest_id, catch_date, animal_id, caught, retained)
     SELECT NEW.ingest_id, j."date", a.animal_id, j.caught, j.retained
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
@@ -161,7 +161,7 @@ RETURNS TRIGGER
 AS $FUNC$
 BEGIN
     INSERT
-      INTO WIConsent
+      INTO app.WIConsent
            (ingest_id, understoodSheet, questionsOpportunity, questionsAnswered,
            understandWithdrawal, understandCoding, agreeArchiving, awareRisks,
            agreeTakePart, agreePhotoTaken, agreePhotoPublished, agreePhotoFutureUse,
@@ -201,7 +201,7 @@ RETURNS TRIGGER
 AS $FUNC$
 BEGIN
     INSERT
-      INTO WIFishingActivity
+      INTO app.WIFishingActivity
            (ingest_id, activity_date, lat, lng, gear_id, mesh_size, animal_id,
             state_id, presentation_id, weight, dis, bms, pots_hauled, 
             landing_date, buyer_transporter)
@@ -227,25 +227,25 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
 -- trigger to populate observation tables when observation JSON inserted into raw table
-DROP TRIGGER WIobservation_insert ON WIRawObservations;
+DROP TRIGGER WIobservation_insert ON app.WIRawObservations;
 
-CREATE TRIGGER WIobservation_insert AFTER INSERT ON WIRawObservations
+CREATE TRIGGER WIobservation_insert AFTER INSERT ON app.WIRawObservations
 FOR EACH ROW EXECUTE PROCEDURE WIObservationInsert();
 
 -- trigger to populate catch table when catch JSON inserted into raw table
-DROP TRIGGER WIcatch_insert ON WIRawCatch;
+DROP TRIGGER WIcatch_insert ON app.WIRawCatch;
 
-CREATE TRIGGER WIcatch_insert AFTER INSERT ON WIRawCatch
+CREATE TRIGGER WIcatch_insert AFTER INSERT ON app.WIRawCatch
 FOR EACH ROW EXECUTE PROCEDURE WICatchInsert();
 
 -- trigger to populate consent table when consent JSON inserted into raw table
-DROP TRIGGER WIconsent_insert ON WIRawConsent;
+DROP TRIGGER WIconsent_insert ON app.WIRawConsent;
 
-CREATE TRIGGER WIconsent_insert AFTER INSERT ON WIRawConsent
+CREATE TRIGGER WIconsent_insert AFTER INSERT ON app.WIRawConsent
 FOR EACH ROW EXECUTE PROCEDURE WIConsentInsert();
 
 -- trigger to populate fishing activity table when activity JSON inserted into raw table
-DROP TRIGGER WIactivity_insert ON WIRawFishingActivity;
+DROP TRIGGER WIactivity_insert ON app.WIRawFishingActivity;
 
-CREATE TRIGGER WIactivity_insert AFTER INSERT ON WIRawFishingActivity
+CREATE TRIGGER WIactivity_insert AFTER INSERT ON app.WIRawFishingActivity
 FOR EACH ROW EXECUTE PROCEDURE WIFishingActivityInsert();
