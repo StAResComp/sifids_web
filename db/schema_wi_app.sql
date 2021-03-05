@@ -104,6 +104,7 @@ CREATE TABLE app.WIConsent (
 );
 
 -- type definition for consent JSON object
+DROP TYPE IF EXISTS consent;
 CREATE TYPE consent AS (
   "understoodSheet" BOOLEAN, 
   "questionsOpportunity" BOOLEAN, 
