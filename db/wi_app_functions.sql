@@ -90,7 +90,7 @@ BEGIN
            j.notes, j.behaviour
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
            (id INTEGER, num INTEGER, behaviour JSON,
-            animal VARCHAR(32), species VARCHAR(32), 
+            animal TEXT, species TEXT, 
             description TEXT, "date" TIMESTAMP, 
             latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             notes TEXT)
