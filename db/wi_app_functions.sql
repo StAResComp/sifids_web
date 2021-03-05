@@ -54,7 +54,7 @@ BEGIN
            (user_id, raw_json)
     VALUES (user_id, in_json);
   -- consent data
-  ELSIF in_json ? 'understoodSheet' THEN
+  ELSIF in_json::JSONB ? 'understoodSheet' THEN
     INSERT 
       INTO app.WIRawConsent
            (user_id, raw_json)
