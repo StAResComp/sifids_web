@@ -167,8 +167,8 @@ BEGIN
            agreeTakePart, agreePhotoTaken, agreePhotoPublished, agreePhotoFutureUse,
            consent_date, consent_name)
     SELECT NEW.ingest_id, 
-           j.understoodSheet, j.questionsOpportunity, j.questionsAnswered,
-           j.understandWithdrawal, j.understandCoding, 
+           j."understoodSheet", j."questionsOpportunity", j."questionsAnswered",
+           j."understandWithdrawal", j."understandCoding", 
            (j.secondary ->> 'agreeArchiving')::BOOLEAN, 
            (j.secondary ->> 'awareRisks')::BOOLEAN,
            (j.secondary ->> 'agreeTakePart')::BOOLEAN, 
