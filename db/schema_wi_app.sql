@@ -103,3 +103,15 @@ CREATE TABLE app.WIConsent (
   consent_name TEXT
 );
 
+-- type definition for consent JSON object
+CREATE TYPE consent (
+  "understoodSheet" BOOLEAN, 
+  "questionsOpportunity" BOOLEAN, 
+  "questionsAnswered" BOOLEAN, 
+  "understandWithdrawal" BOOLEAN, 
+  "understandCoding" BOOLEAN, 
+  "secondary" JSON, 
+  "photography" JSON,
+  consent_date TIMESTAMP, 
+  consent_name TEXT
+);
