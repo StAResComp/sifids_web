@@ -94,7 +94,7 @@ BEGIN
             description TEXT, "date" TIMESTAMP, 
             latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             notes TEXT)
-INNER JOIN entities."Animals" AS a
+ LEFT JOIN entities."Animals" AS a
         ON a.animal_name = j.species
       LOOP
       -- insert single observation, getting observation ID
