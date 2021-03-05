@@ -175,7 +175,7 @@ BEGIN
            (j.photography ->> 'agreePhotoTaken')::BOOLEAN, 
            (j.photography ->> 'agreePhotoPublished')::BOOLEAN, 
            (j.photography ->> 'agreePhotoFutureUse')::BOOLEAN,
-           j.consent_date, j.consent_name
+           j."consent_date", j."consent_name"
       FROM JSON_POPULATE_RECORD(NULL::consent, NEW.raw_json) AS j;
   
     RETURN NULL;
