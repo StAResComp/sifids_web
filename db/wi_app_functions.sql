@@ -89,10 +89,11 @@ BEGIN
            j.latitude AS lat, j.longitude AS lng, 
            j.notes, j.behaviour
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           (animal VARCHAR(32), species VARCHAR(32), 
-            description TEXT, "date" TIMESTAMP, num INTEGER,
+           (id INTEGER, num INTEGER, behaviour JSON,
+            animal VARCHAR(32), species VARCHAR(32), 
+            description TEXT, "date" TIMESTAMP, 
             latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
-            notes TEXT, behaviour JSON)
+            notes TEXT)
 INNER JOIN entities."Animals" AS a
         ON a.animal_name = j.species
       LOOP
