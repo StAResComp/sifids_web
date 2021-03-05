@@ -113,6 +113,6 @@ CREATE TYPE consent AS (
   "understandCoding" BOOLEAN, 
   "secondary" JSON, 
   "photography" JSON,
-  "consent_date" TIMESTAMP, 
-  "consent_name" TEXT
+  "date" TIMESTAMP, 
+  "name" TEXT
 );
