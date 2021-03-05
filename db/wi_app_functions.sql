@@ -177,9 +177,9 @@ BEGIN
            (j.photography ->> 'agreePhotoFutureUse')::BOOLEAN,
            j.consent_date, j.consent_name
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           (understoodSheet BOOLEAN, questionsOpportunity BOOLEAN, questionsAnswered BOOLEAN,
-            understandWithdrawal BOOLEAN, understandCoding BOOLEAN, 
-            secondary JSON, photography JSON,
+           ("understoodSheet" BOOLEAN, "questionsOpportunity" BOOLEAN, 
+            "questionsAnswered" BOOLEAN, "understandWithdrawal" BOOLEAN, 
+            "understandCoding" BOOLEAN, "secondary" JSON, "photography" JSON,
             consent_date TIMESTAMP, consent_name TEXT);
   
     RETURN NULL;
