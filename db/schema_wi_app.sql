@@ -1,6 +1,6 @@
 -- table for raw observation data
-DROP TABLE WIRawObservations;
-CREATE TABLE WIRawObservations (
+DROP TABLE IF EXISTS app.WIRawObservations;
+CREATE TABLE app.WIRawObservations (
   ingest_id SERIAL PRIMARY KEY,
   user_id INTEGER,
   ingest_time TIMESTAMP DEFAULT NOW(),
@@ -8,8 +8,8 @@ CREATE TABLE WIRawObservations (
 );
 
 -- table for processed observation data
-DROP TABLE WIObservations;
-CREATE TABLE WIObservations (
+DROP TABLE IF EXISTS app.WIObservations;
+CREATE TABLE app.WIObservations (
   observation_id SERIAL PRIMARY KEY,
   ingest_id INTEGER,
   animal_id INTEGER,
@@ -22,15 +22,15 @@ CREATE TABLE WIObservations (
 );
 
 -- table for behaviour from observations
-DROP TABLE WIObservationBehaviours;
-CREATE TABLE WIObservationBehaviours (
+DROP TABLE IF EXISTS app.WIObservationBehaviours;
+CREATE TABLE app.WIObservationBehaviours (
   observation_id INTEGER,
   behaviour VARCHAR(64)
 );
 
 -- table for raw catch data
-DROP TABLE WIRawCatch;
-CREATE TABLE WIRawCatch (
+DROP TABLE IF EXISTS app.WIRawCatch;
+CREATE TABLE app.WIRawCatch (
   ingest_id SERIAL PRIMARY KEY,
   user_id INTEGER,
   ingest_time TIMESTAMP DEFAULT NOW(),
@@ -38,8 +38,8 @@ CREATE TABLE WIRawCatch (
 );
 
 -- table for processed catch data
-DROP TABLE WICatch;
-CREATE TABLE WICatch (
+DROP TABLE IF EXISTS app.WICatch;
+CREATE TABLE app.WICatch (
   ingest_id INTEGER,
   catch_date TIMESTAMP,
   animal_id INTEGER,
@@ -48,22 +48,22 @@ CREATE TABLE WICatch (
 );
 
 -- table for raw fishing activity
-DROP TABLE WIRawFishingActivity;
-CREATE TABLE WIRawFishingActivity (
+DROP TABLE IF EXISTS app.WIRawFishingActivity;
+CREATE TABLE app.WIRawFishingActivity (
   ingest_id SERIAL PRIMARY KEY,
   user_id INTEGER,
   ingest_time TIMESTAMP DEFAULT NOW(),
   raw_json JSON
 );
 
-DROP TABLE WIFishingActivity;
-CREATE TABLE WIFishingActivity (
+DROP TABLE IF EXISTS app.WIFishingActivity;
+CREATE TABLE app.WIFishingActivity (
   ingest_id INTEGER,
   activity_date TIMESTAMP,
   lat NUMERIC(15, 12),
   lng NUMERIC(15, 12),
   gear_id INTEGER,
-  mesh_size VARCHAR(16),
+  mesh_id INTEGER,
   animal_id INTEGER,
   state_id INTEGER,
   presentation_id INTEGER,
@@ -76,8 +76,8 @@ CREATE TABLE WIFishingActivity (
 );
 
 -- table for raw consent forms
-DROP TABLE WIRawConsent;
-CREATE TABLE WIRawConsent (
+DROP TABLE IF EXISTS app.WIRawConsent;
+CREATE TABLE app.WIRawConsent (
   ingest_id SERIAL PRIMARY KEY,
   user_id INTEGER,
   ingest_time TIMESTAMP DEFAULT NOW(),
@@ -85,8 +85,8 @@ CREATE TABLE WIRawConsent (
 );
 
 -- table for storing consent options chosen by app user
-DROP TABLE WIConsent;
-CREATE TABLE WIConsent (
+DROP TABLE IF EXISTS app.WIConsent;
+CREATE TABLE app.WIConsent (
   ingest_id INTEGER,
   understoodSheet BOOLEAN,
   questionsOpportunity BOOLEAN,
@@ -103,3 +103,16 @@ CREATE TABLE WIConsent (
   consent_name TEXT
 );
 
+-- type definition for consent JSON object
+DROP TYPE IF EXISTS consent;
+CREATE TYPE consent AS (
+  "understoodSheet" BOOLEAN, 
+  "questionsOpportunity" BOOLEAN, 
+  "questionsAnswered" BOOLEAN, 
+  "understandWithdrawal" BOOLEAN, 
+  "understandCoding" BOOLEAN, 
+  "secondary" JSON, 
+  "photography" JSON,
+  "date" TIMESTAMP, 
+  "name" TEXT
+);

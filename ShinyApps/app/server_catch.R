@@ -114,11 +114,11 @@ output$catchSpecies <- renderUI({ #{{{
 catchDates <- reactive({ #{{{
     dbProc('datesForVesselFish1', 
       list(user$id, 
-        getArray(input$catchVessels),
-        getInt(input$catchPortOfDeparture),
-        getInt(input$catchPortOfLanding),
-        getInt(input$catchFisheryOffice),
-        getArray(input$catchSpecies)
+        getArray(input$catchVessels)#,
+#        getInt(input$catchPortOfDeparture),
+#        getInt(input$catchPortOfLanding),
+#        getInt(input$catchFisheryOffice),
+#        getArray(input$catchSpecies)
         )
       )
   })

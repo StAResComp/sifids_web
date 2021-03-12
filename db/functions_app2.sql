@@ -25,9 +25,12 @@
  * NAME
  * appLogin
  * SYNOPSIS
- * 
+ * Authenticate user using username and password, returning data about user
  * ARGUMENTS
+ *   * in_username - TEXT - name of user
+ *   * in_password - TEXT - password of user
  * RETURN VALUE
+ * Table containing user_id, user_role, vessel_ids, vessel_names and vessel_codes
  ******
  */
 CREATE OR REPLACE FUNCTION appLogin ( --{{{
@@ -52,6 +55,7 @@ BEGIN
        FROM "Users" AS u
  INNER JOIN entities."UserTypes" AS ut USING (user_type_id),
             "Vessels" AS v
+  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
       WHERE u.user_name = in_username
         AND u.user_password = CRYPT(in_password, u.user_password)
         -- fisher, so join to just their vessel/s
@@ -64,14 +68,31 @@ BEGIN
              )
         -- admin/researcher, so get all vessels
           OR (ut.user_type_name IN ('admin', 'researcher'))
-        -- what about fishery officers?
+          OR (ut.user_type_name = 'fishery officer' AND uf.user_id = u.user_id)
             )
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
--- fish 1 catch per species
+/****f* functions_app2.sql/catchPerSpecies
+ * NAME
+ * catchPerSpecies
+ * SYNOPSIS
+ * Get data on catch per species
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start date for window
+ *   * in_max_date - DATE - end date for window
+ *   * in_port_departure - INTEGER - ID of port of departure
+ *   * in_port_landing - INTEGER - ID of port of landing
+ *   * in_fo - INTEGER - ID of fishery office
+ *   * in_species - INTEGER ARRAY - IDs of species to get data for
+ * RETURN VALUE
+ * Table of species names, weight and whether data is anonymised or not
+ ******
+ */
 CREATE OR REPLACE FUNCTION catchPerSpecies ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -132,9 +153,11 @@ BEGIN
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher') 
            OR u1.user_id = in_user_id
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_species IS NULL OR in_species = '{}' OR animal_id = ANY(in_species))
          AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
@@ -149,10 +172,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- catch per species per week
--- use CTE to get every week betweeen start and finish
--- not just weeks with data
--- for graph
+/****f* functions_app2.sql/catchPerSpeciesWeek
+ * NAME
+ * catchPerSpeciesWeek
+ * SYNOPSIS
+ * Get data on catch per species per week.
+ * CTE used to get all weeks within window, not just weeks with data.
+ * ARGUMENTS
+ * RETURN VALUE
+ * Table of week, species, weight and whether data is anonymised or not
+ ******
+ */
 CREATE OR REPLACE FUNCTION catchPerSpeciesWeek ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -247,9 +277,11 @@ BEGIN
            LEFT JOIN "Users" AS u1 USING (user_id)
            LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
            LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+           LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
                WHERE (
                       user_type_name IN ('admin', 'researcher')
                    OR u1.user_id = in_user_id
+                   OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
                      )
                  AND (in_species IS NULL OR in_species = '{}' OR animal_id = ANY(in_species)) 
                  AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
@@ -265,7 +297,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get vessels with fish 1 forms
+/****f* functions_app2.sql/vesselsFish1
+ * NAME
+ * vesselsFish1
+ * SYNOPSIS
+ * Get list of vessels which have Fish1 data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table with vessel_id and vessel_pln (which could be vessel code, depending on user role)
+ ******
+ */
 CREATE OR REPLACE FUNCTION vesselsFish1 ( --{{{
   in_user_id INTEGER
 )
@@ -277,8 +319,8 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT v.vessel_id, 
-           CASE WHEN ut.user_type_name IN ('admin', 'fisher') THEN v.vessel_pln 
-                WHEN ut.user_type_name IN ('researcher', 'fishery officer') THEN v.vessel_code::VARCHAR(16)
+           CASE WHEN ut.user_type_name IN ('admin', 'fisher', 'fishery officer') THEN v.vessel_pln 
+                WHEN ut.user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
       FROM fish1."Headers"
 INNER JOIN "Uploads" USING (upload_id)
@@ -288,8 +330,10 @@ INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher') -- see all vessels
         OR u1.user_id = in_user_id -- just see own vessel/s
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY ut.user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -297,7 +341,18 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get first/last dates for fish 1 data
+/****f* functions_app2.sql/datesForVesselFish1
+ * NAME
+ * datesForVesselFish1
+ * SYNOPSIS
+ * Get first and last dates for Fish1 data for given vessels
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - vessels for which to get data
+ * RETURN VALUE
+ * Table with min_date and max_date
+ ******
+ */
 CREATE OR REPLACE FUNCTION datesForVesselFish1 ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[]
@@ -319,17 +374,29 @@ INNER JOIN "Devices" USING (device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
-           ) 
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+           )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get ports of departure from fish1 forms
+/****f* functions_app2.sql/portOfDeparture
+ * NAME
+ * portOfDeparture
+ * SYNOPSIS
+ * Get ports of departure for vessels
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of port IDs and names
+ ******
+ */
 CREATE OR REPLACE FUNCTION portOfDeparture ( --{{{
   in_user_id INTEGER
 )
@@ -345,12 +412,15 @@ BEGIN
 INNER JOIN entities."Ports" AS p ON (p.port_id = h.port_of_departure_id)
 INNER JOIN "Uploads" USING (upload_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY p.port_id, p.port_name
   ORDER BY p.port_name
 ;
@@ -358,7 +428,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get ports of landing from fish1 forms
+/****f* functions_app2.sql/portOfLanding
+ * NAME
+ * portOfLanding
+ * SYNOPSIS
+ * Get port of landing for vessels
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table with port ID and name
+ ******
+ */
 CREATE OR REPLACE FUNCTION portOfLanding ( --{{{
   in_user_id INTEGER
 )
@@ -374,12 +454,15 @@ BEGIN
 INNER JOIN entities."Ports" AS p ON (p.port_id = h.port_of_landing_id)
 INNER JOIN "Uploads" USING (upload_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY p.port_id, p.port_name
   ORDER BY p.port_name
 ;
@@ -387,7 +470,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get fishery offices from fish1 forms
+/****f* functions_app2.sql/fisheryOffice
+ * NAME
+ * fisheryOffice
+ * SYNOPSIS
+ * Get fishery offices which are visible to user
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of fishery office IDs and towns they're in
+ ******
+ */
 CREATE OR REPLACE FUNCTION fisheryOffice ( --{{{
   in_user_id INTEGER
 )
@@ -408,8 +501,10 @@ INNER JOIN entities."FisheryOffices" AS f USING (fo_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY f.fo_id, f.fo_town
   ORDER BY f.fo_town
 ;
@@ -417,7 +512,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get species from fish 1 forms
+/****f* functions_app2.sql/catchSpecies
+ * NAME
+ * catchSpecies
+ * SYNOPSIS
+ * Return species from Fish1 data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of animal IDs and names
+ ******
+ */
 CREATE OR REPLACE FUNCTION catchSpecies ( --{{{
   in_user_id INTEGER
 )
@@ -459,12 +564,15 @@ BEGIN
   INNER JOIN entities."Animals" AS a USING (animal_id)
   INNER JOIN "Uploads" USING (upload_id)
   INNER JOIN "Devices" USING (device_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE user_type_name IN ('admin', 'researcher')
           OR u1.user_id = in_user_id
+          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
     GROUP BY a.animal_id, a.animal_name
     ORDER BY a.animal_name;
   END IF;
@@ -472,7 +580,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- what track data is available for user
+/****f* functions_app2.sql/trackDataAvailable
+ * NAME
+ * trackDataAvailable
+ * SYNOPSIS
+ * Returns 1 if user is allowed to see track data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Integer - 1 if user can see track data
+ ******
+ */
 CREATE OR REPLACE FUNCTION trackDataAvailable ( --{{{
   in_user_id INTEGER
 )
@@ -510,7 +628,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- what fishing events are available for user
+/****f* functions_app2.sql/fishingEventsAvailable
+ * NAME
+ * fishingEventsAvailable
+ * SYNOPSIS
+ * Get fishing events for given vessels
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get events for
+ * RETURN VALUE
+ ******
+ */
 CREATE OR REPLACE FUNCTION fishingEventsAvailable ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[]
@@ -527,13 +655,16 @@ INNER JOIN analysis."FishingEvents" USING (activity_id)
 INNER JOIN "Tracks" USING (track_id)
 INNER JOIN "Trips" using (trip_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
@@ -541,7 +672,18 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get start/end dates for tracks
+/****f* functions_app2.sql/datesForTracks
+ * NAME
+ * datesForTracks
+ * SYNOPSIS
+ * Get start and end dates for track data for given vessels
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get track dates for
+ * RETURN VALUE
+ * Table with min date and max date for given vessels
+ ******
+ */
 CREATE OR REPLACE FUNCTION datesForTracks ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[]
@@ -556,13 +698,16 @@ BEGIN
     SELECT MIN(trip_date), MAX(trip_date)
       FROM "Trips"
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
@@ -570,7 +715,20 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get locations of fishing activity for heat map
+/****f* functions_app2.sql/heatMapData
+ * NAME
+ * heatMapData
+ * SYNOPSIS
+ * Get data for heatmap (for all users except fishers)
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of period
+ *   * in_max_date - DATE - end of period
+ * RETURN VALUE
+ * Table of trip_id, latitude and longitude
+ ******
+ */
 CREATE OR REPLACE FUNCTION heatMapData ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -590,13 +748,16 @@ BEGIN
 INNER JOIN "Tracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -606,7 +767,20 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get all tracks for heat map (for fishers)
+/****f* functions_app2.sql/heatMapDataFisher
+ * NAME
+ * heatMapDataFisher
+ * SYNOPSIS
+ * Get data for fishers' heat map
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of period
+ *   * in_max_date - DATE - end of period
+ * RETURN VALUE
+ * Table of trip_id, latitude and longitude
+ ******
+ */
 CREATE OR REPLACE FUNCTION heatMapDataFisher ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -624,15 +798,17 @@ BEGIN
     SELECT t.trip_id, latitude, longitude
       FROM "Trips" AS t
 INNER JOIN "Tracks" USING (trip_id)
---INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -642,7 +818,20 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get counts for grids entered while fishing
+/****f* functions_app2.sql/revisitsMapData
+ * NAME
+ * revisitsMapData
+ * SYNOPSIS
+ * Get counts for number of times vessels went in and out of grids
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of period
+ *   * in_max_date - DATE - end of period
+ * RETURN VALUE
+ * Table of corner coordinates for each grid square and counts for each square
+ ******
+ */
 CREATE OR REPLACE FUNCTION revisitsMapData ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -665,13 +854,16 @@ INNER JOIN "Tracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN analysis."Grids" AS g USING (grid_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -684,7 +876,20 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get estimates for trips
+/****f* functions_app2.sql/tripEstimates
+ * NAME
+ * tripEstimates
+ * SYNOPSIS
+ * Get estimates from track analysis for given vessels within given window
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels
+ *   * in_min_date - DATE - start of window
+ *   * in_max_date - DATE - end of window
+ * RETURN VALUE
+ * Table with trip ID, trip name, creel estimates and distance of trip
+ ******
+ */
 CREATE OR REPLACE FUNCTION tripEstimates ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -703,8 +908,8 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, 
            (COALESCE(
-             CASE WHEN user_type_name IN ('admin', 'fisher') THEN vessel_pln || ' ' || device_name::VARCHAR(32)
-                  WHEN user_type_name IN ('researcher', 'fishery officer') THEN vessel_code::VARCHAR(16)
+             CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN vessel_pln || ' ' || device_name::VARCHAR(32)
+                  WHEN user_type_name = 'researcher' THEN vessel_code::VARCHAR(16)
              END,
              'no vessel'
            ) || ' - ' || TO_CHAR(trip_date::DATE, 'dd-mm-yyyy'))::VARCHAR(255), 
@@ -723,9 +928,11 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (
             in_vessels IS NULL 
@@ -741,7 +948,18 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get most recent positions for each vessel today
+/****f* functions_app2.sql/latestPoints
+ * NAME
+ * latestPoints
+ * SYNOPSIS
+ * Get most recent location of vessels from the given trips
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_trips - INTEGER ARRAY - array of trip IDs
+ * RETURN VALUE
+ * Table with trip ID, vessel name (or code), timestamp and location coordinates
+ ******
+ */
 CREATE OR REPLACE FUNCTION latestPoints ( --{{{
   in_user_id INTEGER,
   in_trips INTEGER[]
@@ -758,8 +976,8 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, 
            COALESCE(
-             CASE WHEN user_type_name IN ('admin', 'fisher') THEN vessel_pln
-                  WHEN user_type_name IN ('researcher', 'fishery officer') THEN vessel_code::VARCHAR(16)
+             CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN vessel_pln
+                  WHEN user_type_name = 'researcher' THEN vessel_code::VARCHAR(16)
              END,
              'no vessel') AS vessel_name, 
            "Tracks".time_stamp, "Tracks".latitude, "Tracks".longitude
@@ -781,9 +999,11 @@ INNER JOIN (SELECT device_id, MAX(trptm.time_stamp) AS time_stamp
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND t.trip_id = ANY(in_trips)
        AND DATE_TRUNC('day', trip_date) = DATE_TRUNC('day', NOW())
@@ -792,7 +1012,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get vessels with tracks
+/****f* functions_app2.sql/trackVessels
+ * NAME
+ * trackVessels
+ * SYNOPSIS
+ * Get vessels which have made trips
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of vessel IDs and PLNs (or code)
+ ******
+ */
 CREATE OR REPLACE FUNCTION trackVessels ( --{{{
   in_user_id INTEGER
 )
@@ -804,8 +1034,8 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT v.vessel_id, 
-           CASE WHEN user_type_name IN ('admin', 'fisher') THEN v.vessel_pln
-                WHEN user_type_name IN ('researcher' , 'fishery officer') THEN v.vessel_code::VARCHAR(16)
+           CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN v.vessel_pln
+                WHEN user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
       FROM "Trips" AS t
 INNER JOIN "Devices" USING (device_id)
@@ -814,8 +1044,10 @@ INNER JOIN "Devices" USING (device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -823,7 +1055,21 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get tracks for given trips
+/****f* functions_app2.sql/tracksFromTrips
+ * NAME
+ * tracksFromTrips
+ * SYNOPSIS
+ * Get track data and activity for given trips
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_trips - INTEGER ARRAY - IDs of trips to get data for
+ * RETURN VALUE
+ * Table with trip IDs, coordinates for tracks, activity IDs and vessel IDs
+ * NOTES
+ * Creates temporary table to hold all results, and then selects thinned data from this table,
+ * so that a fairly constant number of rows are returned.
+ ******
+ */
 CREATE OR REPLACE FUNCTION tracksFromTrips ( --{{{
   in_user_id INTEGER,
   in_trips INTEGER[]
@@ -854,9 +1100,11 @@ INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
        AND is_valid = 1
@@ -887,7 +1135,18 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
--- get analysed tracks for given trips
+/****f* functions_app2.sql/analysedTracksFromTrips
+ * NAME
+ * analysedTracksFromTrips
+ * SYNOPSIS
+ * Similar to tracksFromTrips, but use analysed track data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_trips - INTEGER ARRAY - trips for which to get analysed data
+ * RETURN VALUE
+ * Table with trip IDs, coordinates for tracks and activity at track points
+ ******
+ */
 CREATE OR REPLACE FUNCTION analysedTracksFromTrips ( --{{{
   in_user_id INTEGER,
   in_trips INTEGER[]
@@ -915,9 +1174,11 @@ INNER JOIN analysis."TrackAnalysis" USING (track_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
 ;
@@ -947,7 +1208,19 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
--- get events for given trips
+/****f* functions_app2.sql/eventsFromTrips
+ * NAME
+ * eventsFromTrips
+ * SYNOPSIS
+ * Get selected events for given trips
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_trips - INTEGER ARRAY - trips to get event data from
+ *   * in_events - VARCHAR ARRAY - events of interest
+ * RETURN VALUE
+ * Table of trip IDs, coordinates and names of activities
+ ******
+ */
 CREATE OR REPLACE FUNCTION eventsFromTrips ( --{{{
   in_user_id INTEGER,
   in_trips INTEGER[],
@@ -973,9 +1246,11 @@ INNER JOIN entities."Activities" AS a USING (activity_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
        AND (in_events IS NULL OR in_events = '{}' OR a.activity_name = ANY(in_events))
@@ -985,7 +1260,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get Scottish Marine Regions
+/****f* functions_app2.sql/scottishMarineRegions
+ * NAME
+ * scottishMarineRegions
+ * SYNOPSIS
+ * Get Scottish marine regions
+ * RETURN VALUE
+ * Table of names of marine regions and their geometries
+ ******
+ */
 CREATE OR REPLACE FUNCTION scottishMarineRegions ( --{{{
 )
 RETURNS TABLE (
@@ -1002,7 +1285,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get RIFGs
+/****f* functions_app2.sql/RIFGs
+ * NAME
+ * RIFGs
+ * SYNOPSIS
+ * Get Regional Inshore Fisheries Groups data
+ * RETURN VALUE
+ * Table of RIFG names and their geometries
+ ******
+ */
 CREATE OR REPLACE FUNCTION RIFGs ( --{{{
 )
 RETURNS TABLE (
@@ -1019,7 +1310,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get 3 mile limit
+/****f* functions_app2.sql/threeMileLimit
+ * NAME
+ * threeMileLimit
+ * SYNOPSIS
+ * Get geometry for 3 mile limit
+ * RETURN VALUE
+ * Table containing geometries for 3 mile limit
+ ******
+ */
 CREATE OR REPLACE FUNCTION threeMileLimit ( --{{{
 )
 RETURNS TABLE (
@@ -1035,7 +1334,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get 6 mile limit
+/****f* functions_app2.sql/sixMileLimit
+ * NAME
+ * sixMileLimit
+ * SYNOPSIS
+ * Get geometry for 6 mile limit
+ * RETURN VALUE
+ * Table containing geometries for 6 mile limit
+ ******
+ */
 CREATE OR REPLACE FUNCTION sixMileLimit ( --{{{
 )
 RETURNS TABLE (
@@ -1051,7 +1358,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get first/last dates for fish 1 effort data
+/****f* functions_app2.sql/datesForEffort
+ * NAME
+ * datesForEffort
+ * SYNOPSIS
+ * Get first and last dates for Fish 1 effort
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of min and max dates
+ ******
+ */
 CREATE OR REPLACE FUNCTION datesForEffort ( --{{{
   in_user_id INTEGER
 )
@@ -1064,18 +1381,31 @@ BEGIN
   RETURN QUERY
     SELECT MIN(week_start), MAX(week_start)
       FROM fish1."WeeklyEffort"
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get IDs and names of vessels with effort data
+/****f* functions_app2.sql/effortVessels
+ * NAME
+ * effortVessels
+ * SYNOPSIS
+ * Get names of vessels for which there is Fish1 effort data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of vessel IDs and their PLNs (or codes)
+ ******
+ */
 CREATE OR REPLACE FUNCTION effortVessels ( --{{{
   in_user_id INTEGER
 )
@@ -1087,8 +1417,8 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT v.vessel_id, 
-           CASE WHEN user_type_name IN ('admin', 'fisher') THEN v.vessel_pln
-                WHEN user_type_name IN ('researcher', 'fishery officer') THEN v.vessel_code::VARCHAR(16)
+           CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN v.vessel_pln
+                WHEN user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
       FROM fish1."WeeklyEffort"
 INNER JOIN "Vessels" AS v USING (vessel_id)
@@ -1096,8 +1426,10 @@ INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -1105,7 +1437,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get species from effort data
+/****f* functions_app2.sql/effortSpecies
+ * NAME
+ * effortSpecies
+ * SYNOPSIS
+ * Get data for species for which there is Fish1 effort data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of animal IDs and names
+ ******
+ */
 CREATE OR REPLACE FUNCTION effortSpecies ( --{{{
   in_user_id INTEGER
 )
@@ -1120,12 +1462,15 @@ BEGIN
       FROM fish1."WeeklyEffort"
 INNER JOIN fish1."WeeklyEffortSpecies" USING (weekly_effort_id)
 INNER JOIN entities."Animals" AS a USING (animal_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY a.animal_id
   ORDER BY a.animal_id
 ;
@@ -1133,7 +1478,21 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get effort measured by distance travelled
+/****f* functions_app2.sql/effortDistance
+ * NAME
+ * effortDistance
+ * SYNOPSIS
+ * Get distance (effort) per week per species
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of window
+ *   * in_max_date - DATE - end of window
+ *   * in_animals - INTEGER ARRAY - IDs of species to get data for
+ * RETURN VALUE
+ * Table of weeks, total catch, animal name, distance and whether data has been anonymised
+ ******
+ */
 CREATE OR REPLACE FUNCTION effortDistance ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -1180,13 +1539,16 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher')
            OR u1.user_id = in_user_id
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date) 
@@ -1199,7 +1561,21 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get effort measured by creels deployed
+/****f* functions_app2.sql/effortDistance
+ * NAME
+ * effortDistance
+ * SYNOPSIS
+ * Get creels deployed (effort) per week per species
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of window
+ *   * in_max_date - DATE - end of window
+ *   * in_animals - INTEGER ARRAY - IDs of species to get data for
+ * RETURN VALUE
+ * Table of weeks, total catch, animal name, creels deployed and whether data has been anonymised
+ ******
+ */
 CREATE OR REPLACE FUNCTION effortCreels ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -1246,13 +1622,16 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher')
            OR u1.user_id = in_user_id
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
@@ -1265,8 +1644,22 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get effort measured by trips made per week
--- BUG maybe use MAX instead of SUM
+/****f* functions_app2.sql/effortTrips
+ * NAME
+ * effortTrips
+ * SYNOPSIS
+ * Get number of trips made by given vessels for given species in given window
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of window
+ *   * in_max_date - DATE - end of window
+ *   * in_animals - INTEGER ARRAY - IDs of species to get data for
+ * RETURN VALUE
+ * Table of weeks, total catch, animal name, number of trips and whether data has been anonymised
+ * BUGS - maybe use MAX instead of SUM
+ ******
+ */
 CREATE OR REPLACE FUNCTION effortTrips ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
@@ -1313,13 +1706,16 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher')
            OR u1.user_id = in_user_id
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
@@ -1332,7 +1728,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get hauls per day (geography tab)
+/****f* functions_app2.sql/geographyHauls
+ * NAME
+ * geographyHauls
+ * SYNOPSIS
+ * Get hauls from geography data
+ * RETURN VALUE
+ * Table of hauls and their geometry
+ ******
+ */
 CREATE OR REPLACE FUNCTION geographyHauls ( --{{{
 )
 RETURNS TABLE (
@@ -1350,7 +1754,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get vessels (geography tab)
+/****f* functions_app2.sql/geographyVessels
+ * NAME
+ * geographyVessels
+ * SYNOPSIS
+ * Get vessel counts from geography
+ * RETURN VALUE
+ * Table of vessel counts and their geometry
+ ******
+ */
 CREATE OR REPLACE FUNCTION geographyVessels ( --{{{
 )
 RETURNS TABLE (
@@ -1368,7 +1780,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get minke entanglements (geography tab)
+/****f* functions_app2.sql/geographyMinke
+ * NAME
+ * geographyMinke
+ * SYNOPSIS
+ * Get year and locations of Minke whale strandings
+ * RETURN VALUE
+ * Table of years and geometries for strandings
+ ******
+ */
 CREATE OR REPLACE FUNCTION geographyMinke ( --{{{
 )
 RETURNS TABLE (
@@ -1385,7 +1805,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get observations from mobile app (geography tab)
+/****f* functions_app2.sql/geographyObservations
+ * NAME
+ * geographyObservations
+ * SYNOPSIS
+ * Get locations and species observations
+ * RETURN VALUE
+ * Table of animals, their locations and counts
+ ******
+ */
 CREATE OR REPLACE FUNCTION geographyObservations ( --{{{
 )
 RETURNS TABLE (
@@ -1410,7 +1838,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get creel sightings (HWDT) (geography tab)
+/****f* functions_app2.sql/geographySightings
+ * NAME
+ * geographySightings
+ * SYNOPSIS
+ * Get creel sighting data for given year
+ * ARGUMENTS
+ *   * in_year - INTEGER - year to get sightings for
+ * RETURN VALUE
+ * Table of locations of creel sightings for given year
+ ******
+ */
 CREATE OR REPLACE FUNCTION geographySightings ( --{{{
   in_year INTEGER
 )
@@ -1428,7 +1866,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get bathymetry
+/****f* functions_app2.sql/geographyBathymetry
+ * NAME
+ * geographyBathymetry
+ * SYNOPSIS
+ * Get bathymetry data
+ * RETURN VALUE
+ * Table of depth and geometry
+ ******
+ */
 CREATE OR REPLACE FUNCTION geographyBathymetry ( --{{{
 )
 RETURNS TABLE (
@@ -1445,8 +1891,17 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
-
--- get vessels with attributes (admin only)
+/****f* functions_app2.sql/attributeVessels
+ * NAME
+ * attributeVessels
+ * SYNOPSIS
+ * Get vessels which have device attribute data (only for admins)
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ * RETURN VALUE
+ * Table of vessel IDs and their PLNs
+ ******
+ */
 CREATE OR REPLACE FUNCTION attributeVessels ( --{{{
   in_user_id INTEGER
 )
@@ -1472,7 +1927,15 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get attributes of device/track
+/****f* functions_app2.sql/getAttributes
+ * NAME
+ * getAttributes
+ * SYNOPSIS
+ * Get list of available device attributes
+ * RETURN VALUE
+ * Table of attribute IDs, names and descriptions
+ ******
+ */
 CREATE OR REPLACE FUNCTION getAttributes ( --{{{
 )
 RETURNS TABLE (
@@ -1490,7 +1953,18 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get first/last dates for attributes for given vessel/s
+/****f* functions_app2.sql/datesForAttributes
+ * NAME
+ * datesForAttributes
+ * SYNOPSIS
+ * Get first/last dates for given vessels for which there is device attribute data
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - vessels for which to get dates
+ * RETURN VALUE
+ * Table of first and last date
+ ******
+ */
 CREATE OR REPLACE FUNCTION datesForAttributes ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[]
@@ -1515,8 +1989,23 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
--- get attribute values for given vessels between given dates
--- TODO change distance attributes, so that they only return max per day
+/****f* functions_app2.sql/attributePlotData
+ * NAME
+ * attributePlotData
+ * SYNOPSIS
+ * Get data to plot attribute values for given vessels within given window for given attribute types
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_start_date - DATE - start date for window
+ *   * in_end_date - DATE - end date for window
+ *   * in_attributes - INTEGER ARRAY - IDs of attributes wanted for plot
+ * RETURN VALUE
+ * Table of attribute data for given vessels
+ * BUGS
+ * change distance attributes, so that they only return max per day
+ ******
+ */
 CREATE OR REPLACE FUNCTION attributePlotData ( --{{{
   in_user_id INTEGER,
   in_vessels INTEGER[],
