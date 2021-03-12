@@ -905,7 +905,6 @@ BEGIN
 INNER JOIN "Trips" AS t USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN entities."UniqueDevices" USING (unique_device_id)
-INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN analysis."Estimates" AS low ON (t.trip_id = low.trip_id AND low.estimate_type_id = 1)
  LEFT JOIN analysis."Estimates" AS high ON (t.trip_id = high.trip_id AND high.estimate_type_id = 2)
  LEFT JOIN analysis."Estimates" AS dist ON (t.trip_id = dist.trip_id AND dist.estimate_type_id = 3)
@@ -980,7 +979,6 @@ INNER JOIN (SELECT device_id, MAX(trptm.time_stamp) AS time_stamp
                   GROUP BY "Trips".trip_id) AS trptm
          GROUP BY device_id) AS dvtm 
      USING (device_id, time_stamp)
-INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
