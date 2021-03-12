@@ -640,14 +640,16 @@ INNER JOIN analysis."FishingEvents" USING (activity_id)
 INNER JOIN "Tracks" USING (track_id)
 INNER JOIN "Trips" using (trip_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
@@ -681,14 +683,16 @@ BEGIN
     SELECT MIN(trip_date), MAX(trip_date)
       FROM "Trips"
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fisher officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
@@ -729,14 +733,16 @@ BEGIN
 INNER JOIN "Tracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -777,16 +783,17 @@ BEGIN
     SELECT t.trip_id, latitude, longitude
       FROM "Trips" AS t
 INNER JOIN "Tracks" USING (trip_id)
---INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -832,14 +839,16 @@ INNER JOIN "Tracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN analysis."Grids" AS g USING (grid_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fisher officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -896,6 +905,7 @@ BEGIN
 INNER JOIN "Trips" AS t USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN entities."UniqueDevices" USING (unique_device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN analysis."Estimates" AS low ON (t.trip_id = low.trip_id AND low.estimate_type_id = 1)
  LEFT JOIN analysis."Estimates" AS high ON (t.trip_id = high.trip_id AND high.estimate_type_id = 2)
  LEFT JOIN analysis."Estimates" AS dist ON (t.trip_id = dist.trip_id AND dist.estimate_type_id = 3)
@@ -904,10 +914,11 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (
             in_vessels IS NULL 
@@ -969,15 +980,17 @@ INNER JOIN (SELECT device_id, MAX(trptm.time_stamp) AS time_stamp
                   GROUP BY "Trips".trip_id) AS trptm
          GROUP BY device_id) AS dvtm 
      USING (device_id, time_stamp)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND t.trip_id = ANY(in_trips)
        AND DATE_TRUNC('day', trip_date) = DATE_TRUNC('day', NOW())
@@ -1018,9 +1031,10 @@ INNER JOIN "Devices" USING (device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery officers
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -1073,10 +1087,11 @@ INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
        AND is_valid = 1
@@ -1146,10 +1161,11 @@ INNER JOIN analysis."TrackAnalysis" USING (track_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fisher officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
 ;
@@ -1217,10 +1233,11 @@ INNER JOIN entities."Activities" AS a USING (activity_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
        AND (in_events IS NULL OR in_events = '{}' OR a.activity_name = ANY(in_events))
@@ -1351,13 +1368,15 @@ BEGIN
   RETURN QUERY
     SELECT MIN(week_start), MAX(week_start)
       FROM fish1."WeeklyEffort"
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery office
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -1394,9 +1413,10 @@ INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery officer
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -1429,13 +1449,15 @@ BEGIN
       FROM fish1."WeeklyEffort"
 INNER JOIN fish1."WeeklyEffortSpecies" USING (weekly_effort_id)
 INNER JOIN entities."Animals" AS a USING (animal_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery officer
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY a.animal_id
   ORDER BY a.animal_id
 ;
@@ -1504,14 +1526,16 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher')
            OR u1.user_id = in_user_id
-           -- TODO fishery officer
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date) 
@@ -1585,14 +1609,16 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher')
            OR u1.user_id = in_user_id
-           -- TODO fishery officer
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
@@ -1667,14 +1693,16 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher')
            OR u1.user_id = in_user_id
-           -- TODO fishery office
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
