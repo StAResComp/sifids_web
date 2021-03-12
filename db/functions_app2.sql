@@ -417,6 +417,7 @@ INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
