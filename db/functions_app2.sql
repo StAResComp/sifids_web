@@ -1033,8 +1033,8 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT v.vessel_id, 
-           CASE WHEN user_type_name IN ('admin', 'fisher') THEN v.vessel_pln
-                WHEN user_type_name IN ('researcher' , 'fishery officer') THEN v.vessel_code::VARCHAR(16)
+           CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN v.vessel_pln
+                WHEN user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
       FROM "Trips" AS t
 INNER JOIN "Devices" USING (device_id)
@@ -1416,8 +1416,8 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT v.vessel_id, 
-           CASE WHEN user_type_name IN ('admin', 'fisher') THEN v.vessel_pln
-                WHEN user_type_name IN ('researcher', 'fishery officer') THEN v.vessel_code::VARCHAR(16)
+           CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN v.vessel_pln
+                WHEN user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
       FROM fish1."WeeklyEffort"
 INNER JOIN "Vessels" AS v USING (vessel_id)
