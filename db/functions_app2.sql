@@ -907,8 +907,8 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, 
            (COALESCE(
-             CASE WHEN user_type_name IN ('admin', 'fisher') THEN vessel_pln || ' ' || device_name::VARCHAR(32)
-                  WHEN user_type_name IN ('researcher', 'fishery officer') THEN vessel_code::VARCHAR(16)
+             CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN vessel_pln || ' ' || device_name::VARCHAR(32)
+                  WHEN user_type_name = 'researcher' THEN vessel_code::VARCHAR(16)
              END,
              'no vessel'
            ) || ' - ' || TO_CHAR(trip_date::DATE, 'dd-mm-yyyy'))::VARCHAR(255), 
@@ -975,8 +975,8 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, 
            COALESCE(
-             CASE WHEN user_type_name IN ('admin', 'fisher') THEN vessel_pln
-                  WHEN user_type_name IN ('researcher', 'fishery officer') THEN vessel_code::VARCHAR(16)
+             CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN vessel_pln
+                  WHEN user_type_name = 'researcher' THEN vessel_code::VARCHAR(16)
              END,
              'no vessel') AS vessel_name, 
            "Tracks".time_stamp, "Tracks".latitude, "Tracks".longitude
