@@ -55,6 +55,7 @@ BEGIN
        FROM "Users" AS u
  INNER JOIN entities."UserTypes" AS ut USING (user_type_id),
             "Vessels" AS v
+  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
       WHERE u.user_name = in_username
         AND u.user_password = CRYPT(in_password, u.user_password)
         -- fisher, so join to just their vessel/s
@@ -67,7 +68,7 @@ BEGIN
              )
         -- admin/researcher, so get all vessels
           OR (ut.user_type_name IN ('admin', 'researcher'))
-        -- what about fishery officers?
+          OR (ut.user_type_name = 'fishery officer' AND uf.user_id = u.user_id)
             )
 ;
 END;
@@ -152,10 +153,12 @@ BEGIN
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
               user_type_name IN ('admin', 'researcher') 
            OR u1.user_id = in_user_id
-             ) -- TODO for fishery officer, match vessels in their area
+           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+             )
          AND (in_species IS NULL OR in_species = '{}' OR animal_id = ANY(in_species))
          AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
          AND (in_port_departure IS NULL OR in_port_departure = 0 OR port_of_departure_id = in_port_departure)
@@ -274,10 +277,12 @@ BEGIN
            LEFT JOIN "Users" AS u1 USING (user_id)
            LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
            LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+           LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
                WHERE (
                       user_type_name IN ('admin', 'researcher')
                    OR u1.user_id = in_user_id
-                     ) -- TODO - fishery officer
+                   OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+                     )
                  AND (in_species IS NULL OR in_species = '{}' OR animal_id = ANY(in_species)) 
                  AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
                  AND (in_port_departure IS NULL OR in_port_departure = 0 OR port_of_departure_id = in_port_departure)
@@ -325,9 +330,10 @@ INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher') -- see all vessels
         OR u1.user_id = in_user_id -- just see own vessel/s
-        -- TODO fishery officer
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY ut.user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -368,10 +374,12 @@ INNER JOIN "Devices" USING (device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
-           ) -- TODO fishery officer
+         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+           )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
 END;
@@ -404,13 +412,14 @@ BEGIN
 INNER JOIN entities."Ports" AS p ON (p.port_id = h.port_of_departure_id)
 INNER JOIN "Uploads" USING (upload_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery officer
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY p.port_id, p.port_name
   ORDER BY p.port_name
 ;
@@ -444,13 +453,15 @@ BEGIN
 INNER JOIN entities."Ports" AS p ON (p.port_id = h.port_of_landing_id)
 INNER JOIN "Uploads" USING (upload_id)
 INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery officer
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY p.port_id, p.port_name
   ORDER BY p.port_name
 ;
@@ -489,9 +500,10 @@ INNER JOIN entities."FisheryOffices" AS f USING (fo_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+ LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE user_type_name IN ('admin', 'researcher')
         OR u1.user_id = in_user_id
-        -- TODO fishery officer
+        OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
   GROUP BY f.fo_id, f.fo_town
   ORDER BY f.fo_town
 ;
@@ -551,13 +563,15 @@ BEGIN
   INNER JOIN entities."Animals" AS a USING (animal_id)
   INNER JOIN "Uploads" USING (upload_id)
   INNER JOIN "Devices" USING (device_id)
+  INNER JOIN "Vessels" USING (vessel_id)
    LEFT JOIN "UserVessels" USING (vessel_id)
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+   LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE user_type_name IN ('admin', 'researcher')
           OR u1.user_id = in_user_id
-          -- TODO fisher officer
+          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
     GROUP BY a.animal_id, a.animal_name
     ORDER BY a.animal_name;
   END IF;
