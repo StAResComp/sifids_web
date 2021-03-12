@@ -144,7 +144,7 @@ BEGIN
     RETURN QUERY
       SELECT animal_name, SUM(f.weight), 0 AS anon
         FROM fish1."Rows" AS f
-  INNER JOIN entities."Animals" USING (animal_id)
+  INNER JOIN entities."Animals" AS a USING (animal_id)
   INNER JOIN fish1."Headers" USING (header_id)
   INNER JOIN "Uploads" USING (upload_id)
   INNER JOIN "Devices" USING (device_id)
@@ -159,14 +159,14 @@ BEGIN
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
-         AND (in_species IS NULL OR in_species = '{}' OR animal_id = ANY(in_species))
+         AND (in_species IS NULL OR in_species = '{}' OR f.animal_id = ANY(in_species))
          AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
          AND (in_port_departure IS NULL OR in_port_departure = 0 OR port_of_departure_id = in_port_departure)
          AND (in_port_landing IS NULL OR in_port_landing = 0 OR port_of_landing_id = in_port_landing)
          AND (in_fo IS NULL OR in_fo = 0 OR fo_id = in_fo)
          AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
-    GROUP BY animal_name
-    ORDER BY animal_name;
+    GROUP BY f.animal_name
+    ORDER BY f.animal_name;
   END IF;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -283,7 +283,7 @@ BEGIN
                    OR u1.user_id = in_user_id
                    OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
                      )
-                 AND (in_species IS NULL OR in_species = '{}' OR animal_id = ANY(in_species)) 
+                 AND (in_species IS NULL OR in_species = '{}' OR f.animal_id = ANY(in_species)) 
                  AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
                  AND (in_port_departure IS NULL OR in_port_departure = 0 OR port_of_departure_id = in_port_departure)
                  AND (in_port_landing IS NULL OR in_port_landing = 0 OR port_of_landing_id = in_port_landing) 
