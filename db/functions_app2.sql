@@ -68,6 +68,7 @@ BEGIN
              )
         -- admin/researcher, so get all vessels
           OR (ut.user_type_name IN ('admin', 'researcher'))
+        -- fishery officer, so get vessels from their area
           OR (ut.user_type_name = 'fishery officer' AND uf.user_id = u.user_id)
             )
 ;
