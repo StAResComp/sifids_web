@@ -606,8 +606,38 @@ let templates = {
                 ]
       },
       {'<>': 'div', 'class': 'form-group', 'html': function() { return submitDelete('fishery_office', 'fisheryOfficeForm', 'fo_id'); }}
-     ]
+     ],
      //}}}
+
+     // table for days since last trip for devices/vessels
+     'tripsTableTD': {'<>': 'tr', 'html': //{{{
+               [
+                {'<>': 'td', 'text': '${days}'},
+                {'<>': 'td', 'text': '${device_name}'},
+                {'<>': 'td', 'text': '${vessel_name}'}
+               ]
+     }, //}}}
+
+     'tripsTableTH': {'<>': 'tr', 'html': //{{{
+               [
+                {'<>': 'th', 'text': 'Days since last trip'},
+                {'<>': 'th', 'text': 'Device name'},
+                {'<>': 'th', 'text': 'Vessel_name'}
+               ]
+     }, //}}}
+
+     'tripsTable': [
+                    {'<>': 'thead', 'html': 
+                              function() { 
+                                   return json2html.transform({}, templates.tripsTableTH); 
+                              }
+                    },
+                    {'<>': 'tbody', 'html':
+                              function() { 
+                                   return json2html.transform(dbData.tripsTable, templates.tripsTableTD); 
+                              }
+                    }
+                   ]
 };
 
 function textarea(form, id, placeholder) { //{{{

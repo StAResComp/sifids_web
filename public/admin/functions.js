@@ -19,7 +19,8 @@ let fetch = [
              {'id': 'deviceModels', 'url': ['device_models'], 'useData': {}},
              {'id': 'devicePowers', 'url': ['device_powers']},
              {'id': 'deviceProtocols', 'url': ['device_protocols']},
-             {'id': 'uniqueDevices', 'url': ['unique_devices'], 'useData': {}}
+             {'id': 'uniqueDevices', 'url': ['unique_devices'], 'useData': {}},
+             {'id': 'tripsTable', 'url': ['trips'], 'useData': {}}
             ];
 
 // fields that should be arrays, e.g. multiple select fields
@@ -169,7 +170,7 @@ function loadEntity(event) { //{{{
 }
 //}}}
 
-// turn gievn form into JSON
+// turn given form into JSON
 function form2JSON(form) { //{{{
      let data = {};
      

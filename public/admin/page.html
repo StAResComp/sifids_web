@@ -28,10 +28,11 @@
             <nav>
               <div class="nav nav-tabs" id="navtab" role="tablist">
                 <a class="nav-link" id="users_tab" href="#users_content" role="tab" data-toggle="tab" aria-controls="users_content" aria-selected="true">Users</a>
-                <a class="nav-link" id="vessels_tab" href="#vessels_content" role="tab" data-toggle="tab"aria-controls="vessels_content" aria-selected="false">Vessels</a>
+                <a class="nav-link" id="vessels_tab" href="#vessels_content" role="tab" data-toggle="tab" aria-controls="vessels_content" aria-selected="false">Vessels</a>
                 <a class="nav-link" id="unique_devices_tab" href="#unique_devices_content" role="tab" data-toggle="tab" aria-controls="unique_devices_content" aria-selected="false">Unique devices</a>
                 <!--a class="nav-link" id="devices_tab" href="#devices_content" role="tab" data-toggle="tab" aria-controls="devices_content" aria-selected="false">Devices (on vessels)</a-->
-                <a class="nav-link" id="entities_tab" href="#entities_content" role="tab" data-toggle="tab"aria-controls="entities_content" aria-selected="false">Entities</a>
+                <a class="nav-link" id="entities_tab" href="#entities_content" role="tab" data-toggle="tab" aria-controls="entities_content" aria-selected="false">Entities</a>
+                <a class="nav-link" id="trips_tab" href="#trips_content" role="tab" data-toggle="tab" aria-controls="trips_content" aria-selected="false">Trips</a>
               </div>
             </nav>
             <!-- tab content -->
@@ -151,6 +152,14 @@
                     <form id="fisheryOfficeForm" class="api" data-id_field="fo_id" data-use_form="fisheryOfficeForm" data-entity="fishery_offices" data-refresh="fisheryOffices">
                     </form>
                   </div>
+                </div>
+              </div>
+              
+              <!-- trips info -->
+              <div class="tab-pane hide" id="trips_content" role="tabpanel" aria-labelledby="trips_tab">
+                <h2>Trips</h2>
+                <div class="row">
+                  <table id="tripsTable"/>
                 </div>
               </div>
             </div>
