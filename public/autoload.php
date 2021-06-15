@@ -5,8 +5,8 @@ declare(strict_types=1);
 //require_once 'baseConfig.php';
 
 // add includes directory
-//set_include_path(get_include_path() . PATH_SEPARATOR . IDB_INCLUDES_PATH);
-set_include_path('/home/sifids/repo/public/');
+//set_include_path(get_include_path() . PATH_SEPARATOR . '.');
+set_include_path('/home/sifids/public_html/');
 
 // look for Class.php in path above
 //spl_autoload_extensions('.php');
