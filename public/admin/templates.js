@@ -614,6 +614,7 @@ let templates = {
                [
                 {'<>': 'td', 'text': '${days}'},
                 {'<>': 'td', 'text': '${device_name}'},
+                {'<>': 'td', 'text': '${device_string}'},
                 {'<>': 'td', 'text': '${vessel_name}'}
                ]
      }, //}}}
@@ -622,6 +623,7 @@ let templates = {
                [
                 {'<>': 'th', 'text': 'Days since last trip'},
                 {'<>': 'th', 'text': 'Device name'},
+                {'<>': 'th', 'text': 'Device IMEI'},
                 {'<>': 'th', 'text': 'Vessel_name'}
                ]
      }, //}}}
