@@ -22,7 +22,8 @@ class Request {
                                  'user_types' => 'UserType',
                                  'vessel_owners' => 'VesselOwner',
                                  'device_protocols' => 'DeviceProtocol',
-                                 'page' => 'Page');
+                                 'page' => 'Page',
+                                 'trips' => 'Trip');
     private $views = array('json' => 'JSONView',
                            'html' => 'HTMLView');
     

@@ -1449,3 +1449,24 @@ BEGIN
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
+
+-- get number of days since last trip for each device
+CREATE OR REPLACE FUNCTION apiDaysSinceTrip () --{{{
+RETURNS TABLE (
+  days INTEGER,
+  device_name TEXT,
+  vessel_name TEXT
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT NOW()::DATE - MAX(trip_date) AS days, u.device_name, v.vessel_name 
+      FROM entities."UniqueDevices" AS u
+INNER JOIN "Devices" USING (unique_device_id) 
+ LEFT JOIN "Vessels" AS v USING (vessel_id)
+ LEFT JOIN "Trips" USING (device_id) 
+  GROUP BY vessel_id, v.vessel_name, u.device_name 
+  ORDER BY MAX(trip_date) DESC NULLS LAST;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
