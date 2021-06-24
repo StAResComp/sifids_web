@@ -50,7 +50,7 @@ BEGIN
   INSERT INTO "Logins" (username) VALUES (in_username);
   
   RETURN QUERY
-     SELECT u.user_id, ut.user_type_name, 
+     SELECT DISTINCT u.user_id, ut.user_type_name, 
             v.vessel_id, v.vessel_name || ' (' || v.vessel_pln || ')', v.vessel_code
        FROM "Users" AS u
  INNER JOIN entities."UserTypes" AS ut USING (user_type_id),
@@ -917,8 +917,7 @@ BEGIN
            MAX(low.estimate_value)::INTEGER, 
            MAX(high.estimate_value)::INTEGER, 
            (MAX(dist.estimate_value) / 1000)::INTEGER
-      FROM "Tracks"
-INNER JOIN "Trips" AS t USING (trip_id)
+      FROM "Trips" AS t
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN analysis."Estimates" AS low ON (t.trip_id = low.trip_id AND low.estimate_type_id = 1)
