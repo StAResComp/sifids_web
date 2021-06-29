@@ -36,7 +36,7 @@ BEGIN
   element := in_json -> 0;
   
   -- catch data
-  IF element ? 'caught' THEN
+  IF element ? 'catches' THEN
     INSERT 
       INTO app.WIRawCatch
            (user_id, raw_json)
