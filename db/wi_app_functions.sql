@@ -268,7 +268,7 @@ BEGIN
     SELECT NEW.ingest_id, j."date", j.latitude, j.longitude, j.notes
       FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
            ("date" TIMESTAMP, lat NUMERIC(15, 12), lng NUMERIC(15, 12),
-            notes TEXT)
+            notes TEXT);
     RETURN NULL;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
