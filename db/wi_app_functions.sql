@@ -249,3 +249,42 @@ DROP TRIGGER IF EXISTS WIactivity_insert ON app.WIRawFishingActivity;
 
 CREATE TRIGGER WIactivity_insert AFTER INSERT ON app.WIRawFishingActivity
 FOR EACH ROW EXECUTE PROCEDURE WIFishingActivityInsert();
+
+/****f* wi_app_functions.sql/WIAppUserRegistered
+ * NAME
+ * WIAppUserRegistered
+ * SYNOPSIS
+ * Called from Django to add app user to database
+ * ARGUMENTS
+ *   * in_user_name - TEXT - full name of user
+ *   * in_user_email - VARCHAR(255) - email address of user
+ * RETURN VALUE
+ * Boolean - true when success
+ ******
+ */
+CREATE OR REPLACE FUNCTION WIAppUserRegistered ( --{{{
+  in_user_name TEXT,
+  in_user_email VARCHAR(255)
+)
+RETURNS TABLE (
+  inserted BOOLEAN
+)
+AS $FUNC$
+BEGIN
+  -- make sure that user doesn't already exist
+  PERFORM user_id
+     FROM "Users"
+    WHERE user_email = in_user_email;
+    
+  -- not found, so add user
+  IF NOT FOUND THEN
+    INSERT
+      INTO "Users" (user_name, user_email, user_type_id)
+    VALUES (in_user_name, in_user_email, 2); -- 2 is fisher user type id
+  END IF;
+  
+  RETURN QUERY
+    SELECT FOUND;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
