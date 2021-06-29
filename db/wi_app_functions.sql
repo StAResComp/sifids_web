@@ -31,6 +31,20 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'User not found';
   END IF;
+  
+  -- {​"catches":[{​"id":4,"date":"2021-06-29T15:18:36.073Z",
+  --              "species":"Brown Crab","caught":2,"retained":1}​]}​
+  -- {​"observations":[{​"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
+  --                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
+  --                   "species":"Harbour (Common) Seal",
+  --                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
+  --                   "notes":"this is a test"}​]}​
+  -- {​"entries":[{​"id":1,"DIS":false,"BMS":false,"activityDate":"2021-06-29T15:35:35.394Z",
+  --              "latitude":56.31359297361409,"longitude":-3.021656163422738,
+  --              "gear":" Pots/traps FPO ","meshSize":" 80mm ","species":" Brown Crab ",
+  --              "state":" Live ","presentation":" Whole ","weight":10,
+  --              "numPotsHauled":2,"landingDiscardDate":"2021-06-29T15:36:06.000Z",
+  --              "buyerTransporterRegLandedToKeeps":"this is a test"}​]}​
     
   -- get first element from JSON array
   element := in_json -> 0;
@@ -42,23 +56,29 @@ BEGIN
            (user_id, raw_json)
     VALUES (user_id, in_json);
   -- observation data
-  ELSIF element ? 'behaviour' THEN
+  ELSIF element ? 'observations' THEN
     INSERT 
       INTO app.WIRawObservations
            (user_id, raw_json)
     VALUES (user_id, in_json);
   -- fishing activity
-  ELSIF element ? 'activityDate' THEN
+  ELSIF element ? 'entries' THEN
     INSERT 
       INTO app.WIRawFishingActivity
            (user_id, raw_json)
     VALUES (user_id, in_json);
-  -- consent data
+  -- creels
+  ELSIF element ? 'creels' THEN
+    INSERT
+      INTO app.WIRawCreels
+           (user_id, raw_json)
+    VALUES (user_id, in_json);
+  /* -- consent data
   ELSIF in_json::JSONB ? 'understoodSheet' THEN
     INSERT 
       INTO app.WIRawConsent
            (user_id, raw_json)
-    VALUES (user_id, in_json);
+    VALUES (user_id, in_json); */
   END IF;
   
   RETURN QUERY
@@ -226,6 +246,34 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
+/****f* wi_app_functions.sql/WICreels
+ * NAME
+ * WICreels
+ * SYNOPSIS
+ * Trigger function for inserting creel data
+ * RETURN VALUE
+ * NULL - row already inserted in parent table, so just return NULL.
+ ******
+ */
+-- {​"creels":[{​"id":4,"date":"2021-06-29T15:18:55.344Z",
+--             "latitude":56.31364200762157,"longitude":-3.0216440354900453,
+--             "notes":"this is a test"}​]}​
+CREATE OR REPLACE FUNCTION WICreelsInsert () --{{{
+RETURNS TRIGGER
+AS $FUNC$
+BEGIN
+    INSERT
+      INTO app.WICreels
+           (ingest_id, activityDate, lat, lng, notes)
+    SELECT NEW.ingest_id, j."date", j.latitude, j.longitude, j.notes
+      FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
+           ("date" TIMESTAMP, lat NUMERIC(15, 12), lng NUMERIC(15, 12),
+            notes TEXT)
+    RETURN NULL;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
 -- trigger to populate observation tables when observation JSON inserted into raw table
 DROP TRIGGER IF EXISTS WIobservation_insert ON app.WIRawObservations;
 
@@ -249,6 +297,12 @@ DROP TRIGGER IF EXISTS WIactivity_insert ON app.WIRawFishingActivity;
 
 CREATE TRIGGER WIactivity_insert AFTER INSERT ON app.WIRawFishingActivity
 FOR EACH ROW EXECUTE PROCEDURE WIFishingActivityInsert();
+
+-- trigger to populate creels table when creel JSON inserted into raw table
+DROP TRIGGER IF EXISTS WIcreel_insert ON app.WIRawCreels;
+
+CREATE TRIGGER WIcreel_insert AFTER INSERT ON app.WIRawCreels
+FOR EACH ROW EXECUTE PROCEDURE WICreelsInsert();
 
 /****f* wi_app_functions.sql/WIAppUserRegistered
  * NAME

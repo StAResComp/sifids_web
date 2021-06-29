@@ -116,3 +116,22 @@ CREATE TYPE consent AS (
   "date" TIMESTAMP, 
   "name" TEXT
 );
+
+-- table for raw creel data
+DROP TABLE IF EXISTS app.WIRawCreels;
+CREATE TABLE app.WIRawCreels (
+  ingest_id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  ingest_time TIMESTAMP DEFAULT NOW(),
+  raw_json JSON
+);
+
+-- table for processed creel data
+DROP TABLE IF EXISTS app.WICreels;
+CREATE TABLE app.WICreels (
+  ingest_id INTEGER,
+  activityDate TIMESTAMP,
+  lat NUMERIC(15, 12),
+  lng NUMERIC(15, 12),
+  notes TEXT
+);
