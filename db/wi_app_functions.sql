@@ -48,8 +48,8 @@ RETURNING ingest_id
       INTO app.WICatch
            (ingest_id, catch_date, animal_id, caught, retained)
     SELECT new_ingest_id, j."date", a.animal_id, j.caught, j.retained
-      FROM JSON_TO_RECORDSET(element) AS j
-           ("date" TIMESTAMP, species VARCHAR(32), 
+      FROM JSON_TO_RECORDSET(in_json -> 'catches') AS j
+           ("id" INTEGER, "date" TIMESTAMP, species VARCHAR(32), 
             caught INTEGER, retained INTEGER)
 INNER JOIN entities."Animals" AS a 
         ON j.species = a.animal_name;
