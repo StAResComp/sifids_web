@@ -19,7 +19,6 @@ RETURNS TABLE (
 )
 AS $FUNC$
 DECLARE
-  element JSONB;
   new_ingest_id INTEGER;
 BEGIN
    -- record raw json data and link to user
@@ -39,11 +38,8 @@ RETURNING ingest_id
     RETURN;
   END IF;
   
-  -- get first element from JSON array
-  element := in_json -> 0;
-  
   -- catch data
-  IF element ? 'catches' THEN
+  IF in_json -> 'catches' THEN
     INSERT
       INTO app.WICatch
            (ingest_id, catch_date, animal_id, caught, retained)
