@@ -56,7 +56,7 @@ INNER JOIN entities."Animals" AS a
   END IF;
   
   RETURN QUERY
-    SELECT TRUE;
+    SELECT FOUND;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
