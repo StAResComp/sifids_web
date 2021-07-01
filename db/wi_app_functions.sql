@@ -20,65 +20,37 @@ RETURNS TABLE (
 AS $FUNC$
 DECLARE
   element JSONB;
-  user_id INTEGER;
+  new_ingest_id INTEGER;
 BEGIN
-  -- get user ID using email
-  SELECT u.user_id
-    INTO user_id
-    FROM "Users" AS u
-   WHERE u.user_email = in_user_email;
-   
+   -- record raw json data and link to user
+   INSERT
+     INTO app.WiRawData
+          (user_id, raw_json)
+   SELECT u.user_id, in_json
+     FROM "Users" AS u
+    WHERE u.user_email = in_user_email
+RETURNING ingest_id 
+     INTO new_ingest_id;
+
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'User not found';
+    RETURN QUERY
+      SELECT FOUND;
   END IF;
   
-  -- {​"catches":[{​"id":4,"date":"2021-06-29T15:18:36.073Z",
-  --              "species":"Brown Crab","caught":2,"retained":1}​]}​
-  -- {​"observations":[{​"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
-  --                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
-  --                   "species":"Harbour (Common) Seal",
-  --                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
-  --                   "notes":"this is a test"}​]}​
-  -- {​"entries":[{​"id":1,"DIS":false,"BMS":false,"activityDate":"2021-06-29T15:35:35.394Z",
-  --              "latitude":56.31359297361409,"longitude":-3.021656163422738,
-  --              "gear":" Pots/traps FPO ","meshSize":" 80mm ","species":" Brown Crab ",
-  --              "state":" Live ","presentation":" Whole ","weight":10,
-  --              "numPotsHauled":2,"landingDiscardDate":"2021-06-29T15:36:06.000Z",
-  --              "buyerTransporterRegLandedToKeeps":"this is a test"}​]}​
-    
   -- get first element from JSON array
   element := in_json -> 0;
   
   -- catch data
   IF element ? 'catches' THEN
-    INSERT 
-      INTO app.WIRawCatch
-           (user_id, raw_json)
-    VALUES (user_id, in_json);
-  -- observation data
-  ELSIF element ? 'observations' THEN
-    INSERT 
-      INTO app.WIRawObservations
-           (user_id, raw_json)
-    VALUES (user_id, in_json);
-  -- fishing activity
-  ELSIF element ? 'entries' THEN
-    INSERT 
-      INTO app.WIRawFishingActivity
-           (user_id, raw_json)
-    VALUES (user_id, in_json);
-  -- creels
-  ELSIF element ? 'creels' THEN
     INSERT
-      INTO app.WIRawCreels
-           (user_id, raw_json)
-    VALUES (user_id, in_json);
-  /* -- consent data
-  ELSIF in_json::JSONB ? 'understoodSheet' THEN
-    INSERT 
-      INTO app.WIRawConsent
-           (user_id, raw_json)
-    VALUES (user_id, in_json); */
+      INTO app.WICatch
+           (ingest_id, catch_date, animal_id, caught, retained)
+    SELECT new_ingest_id, j."date", a.animal_id, j.caught, j.retained
+      FROM JSON_TO_RECORDSET(in_json) AS j
+           ("date" TIMESTAMP, species VARCHAR(32), 
+            caught INTEGER, retained INTEGER)
+INNER JOIN entities."Animals" AS a 
+        ON j.species = a.animal_name;
   END IF;
   
   RETURN QUERY
@@ -96,6 +68,11 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
  * NULL - row already inserted in parent table, so just return NULL.
  ******
  */
+-- {​"observations":[{​"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
+--                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
+--                   "species":"Harbour (Common) Seal",
+--                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
+--                   "notes":"this is a test"}​]}​
 CREATE OR REPLACE FUNCTION WIObservationInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
@@ -149,6 +126,8 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
  * NULL - row already inserted in parent table, so just return NULL.
  ******
  */
+-- {​"catches":[{​"id":4,"date":"2021-06-29T15:18:36.073Z",
+--              "species":"Brown Crab","caught":2,"retained":1}​]}​
 CREATE OR REPLACE FUNCTION WICatchInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
@@ -213,6 +192,12 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
  * NULL - row already inserted in parent table, so just return NULL.
  ******
  */
+-- {​"entries":[{​"id":1,"DIS":false,"BMS":false,"activityDate":"2021-06-29T15:35:35.394Z",
+--              "latitude":56.31359297361409,"longitude":-3.021656163422738,
+--              "gear":" Pots/traps FPO ","meshSize":" 80mm ","species":" Brown Crab ",
+--              "state":" Live ","presentation":" Whole ","weight":10,
+--              "numPotsHauled":2,"landingDiscardDate":"2021-06-29T15:36:06.000Z",
+--              "buyerTransporterRegLandedToKeeps":"this is a test"}​]}​
 CREATE OR REPLACE FUNCTION WIFishingActivityInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
