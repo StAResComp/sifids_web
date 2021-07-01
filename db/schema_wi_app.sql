@@ -61,7 +61,7 @@ CREATE TABLE app.WIFishingActivity (
 -- table for processed creel data
 DROP TABLE IF EXISTS app.WICreels CASCADE;
 CREATE TABLE app.WICreels (
-  ingest_id INTEGER REFERENCES app.WIRawDate (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   activityDate TIMESTAMP,
   lat NUMERIC(15, 12),
   lng NUMERIC(15, 12),
