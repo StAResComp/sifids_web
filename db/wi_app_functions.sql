@@ -34,7 +34,8 @@ RETURNING ingest_id
 
   IF NOT FOUND THEN
     RETURN QUERY
-      SELECT FOUND;
+      SELECT FALSE;
+    RETURN;
   END IF;
   
   -- get first element from JSON array
@@ -54,7 +55,7 @@ INNER JOIN entities."Animals" AS a
   END IF;
   
   RETURN QUERY
-    SELECT FOUND;
+    SELECT TRUE;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
