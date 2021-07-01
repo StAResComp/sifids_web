@@ -53,10 +53,10 @@ RETURNING ingest_id
             caught INTEGER, retained INTEGER)
 INNER JOIN entities."Animals" AS a 
         ON j.species = a.animal_name;
+    RETURN QUERY
+      SELECT FOUND;
   END IF;
   
-  RETURN QUERY
-    SELECT FOUND;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
