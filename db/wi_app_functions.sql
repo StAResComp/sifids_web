@@ -39,7 +39,7 @@ RETURNING ingest_id
   END IF;
   
   -- catch data
-  IF in_json -> 'catches' THEN
+  IF in_json::JSONB ? 'catches' THEN
     INSERT
       INTO app.WICatch
            (ingest_id, catch_date, animal_id, caught, retained)
