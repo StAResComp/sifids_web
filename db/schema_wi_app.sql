@@ -1,6 +1,6 @@
 -- table for raw JSON data
 -- links data to user
-DROP TABLE IF EXISTS app.WIRawData;
+DROP TABLE IF EXISTS app.WIRawData CASCADE;
 CREATE TABLE app.WIRawData (
   ingest_id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES "Users" (user_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
@@ -9,7 +9,7 @@ CREATE TABLE app.WIRawData (
 );
 
 -- table for processed observation data
-DROP TABLE IF EXISTS app.WIObservations;
+DROP TABLE IF EXISTS app.WIObservations CASCADE;
 CREATE TABLE app.WIObservations (
   observation_id SERIAL PRIMARY KEY,
   ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
@@ -23,14 +23,14 @@ CREATE TABLE app.WIObservations (
 );
 
 -- table for behaviour from observations
-DROP TABLE IF EXISTS app.WIObservationBehaviours;
+DROP TABLE IF EXISTS app.WIObservationBehaviours CASCADE;
 CREATE TABLE app.WIObservationBehaviours (
   observation_id INTEGER REFERENCES app.WiObservations (observation_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   behaviour VARCHAR(64)
 );
 
 -- table for processed catch data
-DROP TABLE IF EXISTS app.WICatch;
+DROP TABLE IF EXISTS app.WICatch CASCADE;
 CREATE TABLE app.WICatch (
   ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   catch_date TIMESTAMP,
@@ -39,9 +39,9 @@ CREATE TABLE app.WICatch (
   retained INTEGER
 );
 
-DROP TABLE IF EXISTS app.WIFishingActivity;
+DROP TABLE IF EXISTS app.WIFishingActivity CASCADE;
 CREATE TABLE app.WIFishingActivity (
-  ingest_id INTEGER REFERENCES app.WIRawDate (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   activity_date TIMESTAMP,
   lat NUMERIC(15, 12),
   lng NUMERIC(15, 12),
@@ -59,7 +59,7 @@ CREATE TABLE app.WIFishingActivity (
 );
 
 -- table for processed creel data
-DROP TABLE IF EXISTS app.WICreels;
+DROP TABLE IF EXISTS app.WICreels CASCADE;
 CREATE TABLE app.WICreels (
   ingest_id INTEGER REFERENCES app.WIRawDate (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   activityDate TIMESTAMP,
