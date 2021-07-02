@@ -89,6 +89,7 @@ INNER JOIN entities."Animals" AS a
     RETURN QUERY
       SELECT FOUND;
     
+  -- fishing activity
   ELSIF in_json::JSONB ? 'entries' THEN
       INSERT
         INTO app.WIFishingActivity
@@ -116,34 +117,28 @@ INNER JOIN entities."Animals" AS a
     
     RETURN QUERY
       SELECT FOUND;
-
+      
+  -- creels observed
+-- {​"creels":[{​"id":4,"date":"2021-06-29T15:18:55.344Z",
+--             "latitude":56.31364200762157,"longitude":-3.0216440354900453,
+--             "notes":"this is a test"}​]}​
+  ELSIF in_json::JSONB ? 'creels' THEN
+    INSERT
+      INTO app.WICreels
+           (ingest_id, activityDate, lat, lng, notes)
+    SELECT new_ingest_id, j."date", j.latitude, j.longitude, j.notes
+      FROM JSON_TO_RECORDSET(in_json -> 'creels') AS j
+           ("date" TIMESTAMP, lat NUMERIC(15, 12), lng NUMERIC(15, 12),
+            notes TEXT);
+            
+    RETURN QUERY
+      SELECT FOUND;
+  
+  ELSE
+    RETURN QUERY
+      SELECT FALSE;
   END IF;
   
-END;
-$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
---}}}
-
-/****f* wi_app_functions.sql/WIFishing ActivityInsert
- * NAME
- * WIFishingActivityInsert
- * SYNOPSIS
- * Trigger function for inserting fishing activity data
- * RETURN VALUE
- * NULL - row already inserted in parent table, so just return NULL.
- ******
- */
--- {​"entries":[{​"id":1,"DIS":false,"BMS":false,"activityDate":"2021-06-29T15:35:35.394Z",
---              "latitude":56.31359297361409,"longitude":-3.021656163422738,
---              "gear":" Pots/traps FPO ","meshSize":" 80mm ","species":" Brown Crab ",
---              "state":" Live ","presentation":" Whole ","weight":10,
---              "numPotsHauled":2,"landingDiscardDate":"2021-06-29T15:36:06.000Z",
---              "buyerTransporterRegLandedToKeeps":"this is a test"}​]}​
-CREATE OR REPLACE FUNCTION WIFishingActivityInsert () --{{{
-RETURNS TRIGGER
-AS $FUNC$
-BEGIN
-
-    RETURN NULL;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
@@ -157,20 +152,10 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
  * NULL - row already inserted in parent table, so just return NULL.
  ******
  */
--- {​"creels":[{​"id":4,"date":"2021-06-29T15:18:55.344Z",
---             "latitude":56.31364200762157,"longitude":-3.0216440354900453,
---             "notes":"this is a test"}​]}​
 CREATE OR REPLACE FUNCTION WICreelsInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
 BEGIN
-    INSERT
-      INTO app.WICreels
-           (ingest_id, activityDate, lat, lng, notes)
-    SELECT NEW.ingest_id, j."date", j.latitude, j.longitude, j.notes
-      FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           ("date" TIMESTAMP, lat NUMERIC(15, 12), lng NUMERIC(15, 12),
-            notes TEXT);
     RETURN NULL;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
