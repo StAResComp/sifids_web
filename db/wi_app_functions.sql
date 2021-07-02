@@ -21,6 +21,7 @@ AS $FUNC$
 DECLARE
   new_ingest_id INTEGER;
   obs_id INTEGER;
+  r RECORD;
 BEGIN
    -- record raw json data and link to user
    INSERT
