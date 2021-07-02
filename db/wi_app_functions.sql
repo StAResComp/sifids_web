@@ -38,6 +38,8 @@ RETURNING ingest_id
       SELECT FALSE;
     RETURN;
   END IF;
+
+  RAISE NOTICE 'in proc';
   
   -- catch data
   IF in_json::JSONB ? 'catches' THEN
@@ -61,7 +63,6 @@ INNER JOIN entities."Animals" AS a
 --                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
 --                   "notes":"this is a test"}]}
   ELSIF in_json::JSONB ? 'observations' THEN
-    RAISE NOTICE 'observations';
     -- loop over objects in observation array
     FOR r IN 
       SELECT a.animal_id, j.num, j.behaviour, j."date",
@@ -100,28 +101,6 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
-/****f* wi_app_functions.sql/WIObservationInsert
- * NAME
- * WIObservationInsert
- * SYNOPSIS
- * Trigger function for inserting observation data
- * RETURN VALUE
- * NULL - row already inserted in parent table, so just return NULL.
- ******
- */
-CREATE OR REPLACE FUNCTION WIObservationInsert () --{{{
-RETURNS TRIGGER
-AS $FUNC$
-DECLARE 
-  obs_id INTEGER;
-  r RECORD;
-BEGIN
-  
-    RETURN NULL;
-END;
-$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
---}}}
-
 /****f* wi_app_functions.sql/WICatchInsert
  * NAME
  * WICatchInsert
@@ -146,42 +125,6 @@ BEGIN
             caught INTEGER, retained INTEGER)
 INNER JOIN entities."Animals" AS a 
         ON j.species = a.animal_name;
-  
-    RETURN NULL;
-END;
-$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
---}}}
-
-/****f* wi_app_functions.sql/WIConsentInsert
- * NAME
- * WIConsentInsert
- * SYNOPSIS
- * Trigger function for inserting consent data
- * RETURN VALUE
- * NULL - row already inserted in parent table, so just return NULL.
- ******
- */
-CREATE OR REPLACE FUNCTION WIConsentInsert () --{{{
-RETURNS TRIGGER
-AS $FUNC$
-BEGIN
-    INSERT
-      INTO app.WIConsent
-           (ingest_id, understoodSheet, questionsOpportunity, questionsAnswered,
-           understandWithdrawal, understandCoding, agreeArchiving, awareRisks,
-           agreeTakePart, agreePhotoTaken, agreePhotoPublished, agreePhotoFutureUse,
-           consent_date, consent_name)
-    SELECT NEW.ingest_id, 
-           j."understoodSheet", j."questionsOpportunity", j."questionsAnswered",
-           j."understandWithdrawal", j."understandCoding", 
-           (j.secondary ->> 'agreeArchiving')::BOOLEAN, 
-           (j.secondary ->> 'awareRisks')::BOOLEAN,
-           (j.secondary ->> 'agreeTakePart')::BOOLEAN, 
-           (j.photography ->> 'agreePhotoTaken')::BOOLEAN, 
-           (j.photography ->> 'agreePhotoPublished')::BOOLEAN, 
-           (j.photography ->> 'agreePhotoFutureUse')::BOOLEAN,
-           j."date", j."name"
-      FROM JSON_POPULATE_RECORD(NULL::consent, NEW.raw_json) AS j;
   
     RETURN NULL;
 END;
@@ -263,36 +206,6 @@ BEGIN
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
-
--- trigger to populate observation tables when observation JSON inserted into raw table
-DROP TRIGGER IF EXISTS WIobservation_insert ON app.WIRawObservations;
-
-CREATE TRIGGER WIobservation_insert AFTER INSERT ON app.WIRawObservations
-FOR EACH ROW EXECUTE PROCEDURE WIObservationInsert();
-
--- trigger to populate catch table when catch JSON inserted into raw table
-DROP TRIGGER IF EXISTS WIcatch_insert ON app.WIRawCatch;
-
-CREATE TRIGGER WIcatch_insert AFTER INSERT ON app.WIRawCatch
-FOR EACH ROW EXECUTE PROCEDURE WICatchInsert();
-
--- trigger to populate consent table when consent JSON inserted into raw table
-DROP TRIGGER IF EXISTS WIconsent_insert ON app.WIRawConsent;
-
-CREATE TRIGGER WIconsent_insert AFTER INSERT ON app.WIRawConsent
-FOR EACH ROW EXECUTE PROCEDURE WIConsentInsert();
-
--- trigger to populate fishing activity table when activity JSON inserted into raw table
-DROP TRIGGER IF EXISTS WIactivity_insert ON app.WIRawFishingActivity;
-
-CREATE TRIGGER WIactivity_insert AFTER INSERT ON app.WIRawFishingActivity
-FOR EACH ROW EXECUTE PROCEDURE WIFishingActivityInsert();
-
--- trigger to populate creels table when creel JSON inserted into raw table
-DROP TRIGGER IF EXISTS WIcreel_insert ON app.WIRawCreels;
-
-CREATE TRIGGER WIcreel_insert AFTER INSERT ON app.WIRawCreels
-FOR EACH ROW EXECUTE PROCEDURE WICreelsInsert();
 
 /****f* wi_app_functions.sql/WIAppUserRegistered
  * NAME
