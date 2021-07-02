@@ -68,7 +68,7 @@ INNER JOIN entities."Animals" AS a
               latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
               notes TEXT)
    LEFT JOIN entities."Animals" AS a
-          ON a.animal_name = j.species
+          ON a.animal_name ILIKE j.species
         LOOP
         -- insert single observation, getting observation ID
              INSERT 
@@ -106,11 +106,11 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
  * NULL - row already inserted in parent table, so just return NULL.
  ******
  */
--- {"observations":[{​"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
+-- {"observations":[{"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
 --                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
 --                   "species":"Harbour (Common) Seal",
 --                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
---                   "notes":"this is a test"}​]}​
+--                   "notes":"this is a test"}]}
 CREATE OR REPLACE FUNCTION WIObservationInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
