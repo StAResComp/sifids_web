@@ -64,7 +64,7 @@ INNER JOIN entities."Animals" AS a
     RAISE NOTICE 'observations';
     -- loop over objects in observation array
     FOR r IN 
-      SELECT a.animal_id, j.num, j.behaviour, j."date"
+      SELECT a.animal_id, j.num, j.behaviour, j."date",
              j.latitude AS lat, j.longitude AS lng, 
              j.notes
         FROM JSON_TO_RECORDSET(in_json -> 'observations') AS j
