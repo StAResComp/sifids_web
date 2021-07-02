@@ -61,6 +61,7 @@ INNER JOIN entities."Animals" AS a
 --                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
 --                   "notes":"this is a test"}]}
   ELSIF in_json::JSONB ? 'observations' THEN
+    RAISE NOTICE 'observations';
     -- loop over objects in observation array
     FOR r IN 
       SELECT a.animal_id, j.num, j.behaviour, j."date"
