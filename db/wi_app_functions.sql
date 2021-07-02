@@ -40,8 +40,6 @@ RETURNING ingest_id
     RETURN;
   END IF;
 
-  RAISE NOTICE 'in proc';
-  
   -- catch data
   IF in_json::JSONB ? 'catches' THEN
     INSERT
@@ -58,11 +56,6 @@ INNER JOIN entities."Animals" AS a
       SELECT FOUND;
       
   -- observations
--- {"observations":[{"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
---                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
---                   "species":"Harbour (Common) Seal",
---                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
---                   "notes":"this is a test"}]}
   ELSIF in_json::JSONB ? 'observations' THEN
     -- loop over objects in observation array
     FOR r IN 
@@ -96,38 +89,36 @@ INNER JOIN entities."Animals" AS a
     RETURN QUERY
       SELECT FOUND;
     
+  ELSIF in_json::JSONB ? 'entries' THEN
+      INSERT
+        INTO app.WIFishingActivity
+             (ingest_id, activity_date, lat, lng, gear_id, mesh_id, animal_id,
+              state_id, presentation_id, weight, dis, bms, pots_hauled, 
+              landing_date, buyer_transporter)
+      SELECT new_ingest_id, j."activityDate" AS activity_date, 
+             j.latitude AS lat, j.longitude AS lng,
+             g.gear_id, m.mesh_id, a.animal_id, s.state_id, p.presentation_id,
+             j.weight, j."DIS" AS dis, j."BMS" AS bms, 
+             j."numPotsHauled" AS pots_hauled, j."landingDiscardDate" AS landing_date, 
+             j."buyerTransporterRegLandedToKeeps"
+        FROM JSON_TO_RECORDSET(in_json -> 'entries') AS j
+             ("activityDate" TIMESTAMP, 
+              latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
+              gear VARCHAR(32), "meshSize" VARCHAR(16), species TEXT, state VARCHAR(32),
+              presentation VARCHAR(32), weight NUMERIC(6, 2), "DIS" BOOLEAN, "BMS" BOOLEAN,
+              "numPotsHauled" INTEGER, "landingDiscardDate" TIMESTAMP, 
+              "buyerTransporterRegLandedToKeeps" TEXT)
+    LEFT JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
+    LEFT JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j."meshSize")
+    LEFT JOIN entities."Animals" AS a ON (a.animal_name = j.species)
+    LEFT JOIN entities."States" AS s ON (s.state_name = j.state)
+    LEFT JOIN entities."Presentations" AS p ON (p.presentation_name = j.presentation);
+    
+    RETURN QUERY
+      SELECT FOUND;
+
   END IF;
   
-END;
-$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
---}}}
-
-/****f* wi_app_functions.sql/WICatchInsert
- * NAME
- * WICatchInsert
- * SYNOPSIS
- * Trigger function for inserting catch data
- * RETURN VALUE
- * NULL - row already inserted in parent table, so just return NULL.
- ******
- */
--- {​"catches":[{​"id":4,"date":"2021-06-29T15:18:36.073Z",
---              "species":"Brown Crab","caught":2,"retained":1}​]}​
-CREATE OR REPLACE FUNCTION WICatchInsert () --{{{
-RETURNS TRIGGER
-AS $FUNC$
-BEGIN
-    INSERT
-      INTO app.WICatch
-           (ingest_id, catch_date, animal_id, caught, retained)
-    SELECT NEW.ingest_id, j."date", a.animal_id, j.caught, j.retained
-      FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           ("date" TIMESTAMP, species VARCHAR(32), 
-            caught INTEGER, retained INTEGER)
-INNER JOIN entities."Animals" AS a 
-        ON j.species = a.animal_name;
-  
-    RETURN NULL;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
@@ -151,29 +142,6 @@ CREATE OR REPLACE FUNCTION WIFishingActivityInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
 BEGIN
-    INSERT
-      INTO app.WIFishingActivity
-           (ingest_id, activity_date, lat, lng, gear_id, mesh_id, animal_id,
-            state_id, presentation_id, weight, dis, bms, pots_hauled, 
-            landing_date, buyer_transporter)
-    SELECT NEW.ingest_id, j."activityDate" AS activity_date, 
-           j.latitude AS lat, j.longitude AS lng,
-           g.gear_id, m.mesh_id, a.animal_id, s.state_id, p.presentation_id,
-           j.weight, j."DIS" AS dis, j."BMS" AS bms, 
-           j."numPotsHauled" AS pots_hauled, j."landingDiscardDate" AS landing_date, 
-           j."buyerTransporterRegLandedToKeeps"
-      FROM JSON_TO_RECORDSET(NEW.raw_json) AS j
-           ("activityDate" TIMESTAMP, 
-            latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
-            gear VARCHAR(32), "meshSize" VARCHAR(16), species TEXT, state VARCHAR(32),
-            presentation VARCHAR(32), weight NUMERIC(6, 2), "DIS" BOOLEAN, "BMS" BOOLEAN,
-            "numPotsHauled" INTEGER, "landingDiscardDate" TIMESTAMP, 
-            "buyerTransporterRegLandedToKeeps" TEXT)
-LEFT JOIN entities."Gears" AS g ON (g.gear_name = j.gear)
-LEFT JOIN entities."MeshSizes" AS m ON (m.mesh_size_name = j."meshSize")
-LEFT JOIN entities."Animals" AS a ON (a.animal_name = j.species)
-LEFT JOIN entities."States" AS s ON (s.state_name = j.state)
-LEFT JOIN entities."Presentations" AS p ON (p.presentation_name = j.presentation);
 
     RETURN NULL;
 END;
