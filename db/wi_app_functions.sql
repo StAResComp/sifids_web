@@ -128,7 +128,7 @@ INNER JOIN entities."Animals" AS a
            (ingest_id, activityDate, lat, lng, notes)
     SELECT new_ingest_id, j."date", j.latitude, j.longitude, j.notes
       FROM JSON_TO_RECORDSET(in_json -> 'creels') AS j
-           ("date" TIMESTAMP, lat NUMERIC(15, 12), lng NUMERIC(15, 12),
+           ("date" TIMESTAMP, latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             notes TEXT);
             
     RETURN QUERY
