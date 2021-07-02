@@ -55,16 +55,20 @@ INNER JOIN entities."Animals" AS a
       SELECT FOUND;
       
   -- observations
+-- {"observations":[{"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
+--                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
+--                   "species":"Harbour (Common) Seal",
+--                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
+--                   "notes":"this is a test"}]}
   ELSIF in_json::JSONB ? 'observations' THEN
     -- loop over objects in observation array
     FOR r IN 
-      SELECT a.animal_id, j.description, j."date", j.num,
+      SELECT a.animal_id, j.num, j.behaviour, j."date"
              j.latitude AS lat, j.longitude AS lng, 
-             j.notes, j.behaviour
+             j.notes
         FROM JSON_TO_RECORDSET(in_json -> 'observations') AS j
              (id INTEGER, num INTEGER, behaviour JSON,
-              animal TEXT, species TEXT, 
-              description TEXT, "date" TIMESTAMP, 
+              "date" TIMESTAMP, animal TEXT, species TEXT, 
               latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
               notes TEXT)
    LEFT JOIN entities."Animals" AS a
@@ -73,10 +77,8 @@ INNER JOIN entities."Animals" AS a
         -- insert single observation, getting observation ID
              INSERT 
                INTO app.WIObservations
-                    (ingest_id, animal_id, obs_count, description, obs_date, 
-                     lat, lng, notes)
-             VALUES (new_ingest_id, r.animal_id, r.num, r.description, r."date", 
-                     r.lat, r.lng, r.notes)
+                    (ingest_id, animal_id, obs_count, obs_date, lat, lng, notes)
+             VALUES (new_ingest_id, r.animal_id, r.num, r."date", r.lat, r.lng, r.notes)
           RETURNING observation_id
                INTO obs_id;
              
@@ -106,11 +108,6 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
  * NULL - row already inserted in parent table, so just return NULL.
  ******
  */
--- {"observations":[{"id":2,"num":1,"behaviour":["Approaching the vessel","other"],
---                   "date":"2021-06-29T15:34:41.069Z","animal":"Seal",
---                   "species":"Harbour (Common) Seal",
---                   "latitude":56.31369283184135,"longitude":-3.0216615602865473,
---                   "notes":"this is a test"}]}
 CREATE OR REPLACE FUNCTION WIObservationInsert () --{{{
 RETURNS TRIGGER
 AS $FUNC$
