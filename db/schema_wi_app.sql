@@ -1,18 +1,19 @@
--- table for raw observation data
-DROP TABLE IF EXISTS app.WIRawObservations;
-CREATE TABLE app.WIRawObservations (
+-- table for raw JSON data
+-- links data to user
+DROP TABLE IF EXISTS app.WIRawData CASCADE;
+CREATE TABLE app.WIRawData (
   ingest_id SERIAL PRIMARY KEY,
-  user_id INTEGER,
+  user_id INTEGER REFERENCES "Users" (user_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   ingest_time TIMESTAMP DEFAULT NOW(),
   raw_json JSON
 );
 
 -- table for processed observation data
-DROP TABLE IF EXISTS app.WIObservations;
+DROP TABLE IF EXISTS app.WIObservations CASCADE;
 CREATE TABLE app.WIObservations (
   observation_id SERIAL PRIMARY KEY,
-  ingest_id INTEGER,
-  animal_id INTEGER,
+  ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  animal_id INTEGER REFERENCES entities."Animals" (animal_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   obs_count INTEGER,
   description TEXT,
   obs_date TIMESTAMP,
@@ -22,51 +23,33 @@ CREATE TABLE app.WIObservations (
 );
 
 -- table for behaviour from observations
-DROP TABLE IF EXISTS app.WIObservationBehaviours;
+DROP TABLE IF EXISTS app.WIObservationBehaviours CASCADE;
 CREATE TABLE app.WIObservationBehaviours (
-  observation_id INTEGER,
+  observation_id INTEGER REFERENCES app.WiObservations (observation_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   behaviour VARCHAR(64)
 );
 
--- table for raw catch data
-DROP TABLE IF EXISTS app.WIRawCatch;
-CREATE TABLE app.WIRawCatch (
-  ingest_id SERIAL PRIMARY KEY,
-  user_id INTEGER,
-  ingest_time TIMESTAMP DEFAULT NOW(),
-  raw_json JSON
-);
-
 -- table for processed catch data
-DROP TABLE IF EXISTS app.WICatch;
+DROP TABLE IF EXISTS app.WICatch CASCADE;
 CREATE TABLE app.WICatch (
-  ingest_id INTEGER,
+  ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   catch_date TIMESTAMP,
-  animal_id INTEGER,
+  animal_id INTEGER REFERENCES entities."Animals" (animal_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   caught INTEGER,
   retained INTEGER
 );
 
--- table for raw fishing activity
-DROP TABLE IF EXISTS app.WIRawFishingActivity;
-CREATE TABLE app.WIRawFishingActivity (
-  ingest_id SERIAL PRIMARY KEY,
-  user_id INTEGER,
-  ingest_time TIMESTAMP DEFAULT NOW(),
-  raw_json JSON
-);
-
-DROP TABLE IF EXISTS app.WIFishingActivity;
+DROP TABLE IF EXISTS app.WIFishingActivity CASCADE;
 CREATE TABLE app.WIFishingActivity (
-  ingest_id INTEGER,
+  ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   activity_date TIMESTAMP,
   lat NUMERIC(15, 12),
   lng NUMERIC(15, 12),
-  gear_id INTEGER,
-  mesh_id INTEGER,
-  animal_id INTEGER,
-  state_id INTEGER,
-  presentation_id INTEGER,
+  gear_id INTEGER REFERENCES entities."Gears" (gear_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  mesh_id INTEGER REFERENCES entities."MeshSizes" (mesh_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  animal_id INTEGER REFERENCES entities."Animals" (animal_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  state_id INTEGER REFERENCES entities."States" (state_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  presentation_id INTEGER REFERENCES entities."Presentations" (presentation_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
   weight NUMERIC(6, 2),
   dis BOOLEAN,
   bms BOOLEAN,
@@ -75,44 +58,12 @@ CREATE TABLE app.WIFishingActivity (
   buyer_transporter TEXT
 );
 
--- table for raw consent forms
-DROP TABLE IF EXISTS app.WIRawConsent;
-CREATE TABLE app.WIRawConsent (
-  ingest_id SERIAL PRIMARY KEY,
-  user_id INTEGER,
-  ingest_time TIMESTAMP DEFAULT NOW(),
-  raw_json JSON
-);
-
--- table for storing consent options chosen by app user
-DROP TABLE IF EXISTS app.WIConsent;
-CREATE TABLE app.WIConsent (
-  ingest_id INTEGER,
-  understoodSheet BOOLEAN,
-  questionsOpportunity BOOLEAN,
-  questionsAnswered BOOLEAN,
-  understandWithdrawal BOOLEAN,
-  understandCoding BOOLEAN,
-  agreeArchiving BOOLEAN,
-  awareRisks BOOLEAN,
-  agreeTakePart BOOLEAN,
-  agreePhotoTaken BOOLEAN,
-  agreePhotoPublished BOOLEAN,
-  agreePhotoFutureUse BOOLEAN,
-  consent_date TIMESTAMP,
-  consent_name TEXT
-);
-
--- type definition for consent JSON object
-DROP TYPE IF EXISTS consent;
-CREATE TYPE consent AS (
-  "understoodSheet" BOOLEAN, 
-  "questionsOpportunity" BOOLEAN, 
-  "questionsAnswered" BOOLEAN, 
-  "understandWithdrawal" BOOLEAN, 
-  "understandCoding" BOOLEAN, 
-  "secondary" JSON, 
-  "photography" JSON,
-  "date" TIMESTAMP, 
-  "name" TEXT
+-- table for processed creel data
+DROP TABLE IF EXISTS app.WICreels CASCADE;
+CREATE TABLE app.WICreels (
+  ingest_id INTEGER REFERENCES app.WIRawData (ingest_id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  activityDate TIMESTAMP,
+  lat NUMERIC(15, 12),
+  lng NUMERIC(15, 12),
+  notes TEXT
 );
