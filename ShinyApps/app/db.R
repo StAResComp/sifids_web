@@ -5,8 +5,8 @@ con <- NA
 global <- function() {
   # get connection details from ~/.pgpass
   deets <- scan(file="~/.pgpass", sep=":", what=list('', '', '', '', ''))
-  # want line 14
-  line <- 14
+  # which line to use
+  line <- 15
   con <<- dbConnect(RPostgreSQL::PostgreSQL(max.con=50), 
     host=deets[[1]][line], 
     dbname=deets[[3]][line], 

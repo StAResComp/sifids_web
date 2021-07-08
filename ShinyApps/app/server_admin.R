@@ -8,6 +8,9 @@ attributeDates <- reactive({
 # get plot data
 plotData <- reactive({
     #{{{
+    # need attributes for plot
+    req(input$adminAttributes)
+    
     # need dates
     dates <- getDateRange(input$adminDates)
     if (is.null(dates)) {
