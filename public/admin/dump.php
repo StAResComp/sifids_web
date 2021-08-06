@@ -6,7 +6,7 @@ namespace SIFIDS_ADMIN;
 
 require_once '../autoload.php';
 
-$dumpActions = ['trips', 'tracks', 'vessels'];
+$dumpActions = ['trips', 'trip_estimates', 'tracks', 'vessels'];
 $dumpForm = 'dump.html';
 
 if (isset($_GET['dump']) && in_array($_GET['dump'], $dumpActions)) {
@@ -22,7 +22,14 @@ if (isset($_GET['dump']) && in_array($_GET['dump'], $dumpActions)) {
     }
     
     try {
-        $dump->generateDump();
+        // generate data and get filename for CSV attachment
+        $filename = $dump->generateDump();
+        
+        // headers for CSV as attachment
+        header('Content-type: text/csv');
+        header(sprintf('Content-disposition: attachment; filename=%s.csv',
+                       $filename));
+
         print $dump;
     }
     catch (\Exception $e) {

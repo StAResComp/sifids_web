@@ -1,0 +1,52 @@
+<html>
+  <head>
+    <title>Database dump interface</title>
+  </head>
+  
+  <body>
+    <h1>Database dump interface</h1>
+    
+    <p>Options are:</p>
+    
+    <dl>
+      <dt>Trips</dt>
+      <dd>Get data on trips made between start and end dates</dd>
+      
+      <dt>Tracks</dt>
+      <dd>Get data on tracks made during trips between start and end dates</dd>
+      
+      <dt>Trip estimates</dt>
+      <dd>Get estimates (distance, creels) for trips made between start and end dates</dd>
+      
+      <dt>Track analysis</dt>
+      <dd>Get data on analysed tracks (activity, grid squares) from trips made between start and end dates</dd>
+    </dl>
+    
+    <form action="dump.php" method="GET">
+      <p>
+        <label for="dump">Select data source</label>
+        <select name="dump" id="dump">
+          <option value=""/>
+          <option value="trips">Trips</option>
+          <option value="tracks">Tracks</option>
+          <option value="trip_estimates">Trip estimates</option>
+          <option value="track_analysis">Track analysis</option>
+        </select>
+      </p>
+      
+      <p>
+        <label for="start_date">Start date</label>
+        <input type="date" name="start_date" id="start_date" pattern="\d{4}-\d{2}-\d{2}"/>
+      </p>
+      
+      <p>
+        <label for="end_date">End date</label>
+        <input type="date" name="end_date" id="end_date" pattern="\d{4}-\d{2}-\d{2}"/>
+      </p>
+      
+      <p>
+        <input type="submit" value="Submit"/>
+      </p>
+    </form>
+  </body>
+</html>
