@@ -98,6 +98,18 @@ class Dump {
         return $this->db->dumpTrackAnalysis($this->startDate, $this->endDate);
     }
     //}}}
+
+    // return data on vessels
+    private function vessels() : array { //{{{
+        return $this->db->dumpVessels();
+    }
+    //}}}
+
+    // return data on grids
+    private function grids() : array { //{{{
+        return $this->db->dumpGrids();
+    }
+    //}}}
 }
 
 ?>

@@ -20,6 +20,12 @@
       
       <dt>Track analysis</dt>
       <dd>Get data on analysed tracks (activity, grid squares) from trips made between start and end dates</dd>
+      
+      <dt>Vessels</dt>
+      <dd>Get data on all vessels, their owner, gear and target species (can be joined to trip data)</dd>
+      
+      <dt>Grids</dt>
+      <dd>Get coordinates for all grid squares (can be joined to track analysis)</dd>
     </dl>
     
     <form action="dump.php" method="GET">
@@ -31,6 +37,8 @@
           <option value="tracks">Tracks</option>
           <option value="trip_estimates">Trip estimates</option>
           <option value="track_analysis">Track analysis</option>
+          <option value="vessels">Vessels</option>
+          <option value="grids">Grids</option>
         </select>
       </p>
       

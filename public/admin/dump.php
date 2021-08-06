@@ -6,7 +6,10 @@ namespace SIFIDS_ADMIN;
 
 require_once '../autoload.php';
 
-$dumpActions = ['trips', 'trip_estimates', 'tracks', 'vessels'];
+// valid actions
+$dumpActions = ['trips', 'trip_estimates', 'tracks', 'track_analysis', 
+                'vessels', 'grids'];
+// form file
 $dumpForm = 'dump.html';
 
 if (isset($_GET['dump']) && in_array($_GET['dump'], $dumpActions)) {

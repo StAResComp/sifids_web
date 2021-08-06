@@ -94,4 +94,47 @@ INNER JOIN entities."Activities" AS a USING (activity_id)
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
+-- get vessel data
+CREATE OR REPLACE FUNCTION dumpVessels () --{{{
+RETURNS TABLE (
+  vessel_id INTEGER,
+  vessel_name TEXT,
+  vessel_code VARCHAR(32),
+  vessel_pln VARCHAR(16),
+  owner_name TEXT,
+  fo_town TEXT,
+  vessel_length NUMERIC(6, 3),
+  gear_name VARCHAR(32),
+  animal_name TEXT,
+  animal_code VARCHAR(16)
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT v.vessel_id, v.vessel_name, v.vessel_code, v.vessel_pln,
+           o.owner_name, fo.fo_town,
+           v.vessel_length, g.gear_name, a.animal_name, a.animal_code
+      FROM "Vessels" AS v
+INNER JOIN "VesselOwners" AS o USING (owner_id)
+INNER JOIN entities."FisheryOffices" AS fo USING (fo_id)
+INNER JOIN entities."Gears" AS g USING (gear_id)
+INNER JOIN entities."Animals" AS a USING (animal_id);
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
+-- get grid square data
+CREATE OR REPLACE FUNCTION dumpGrids () --{{{
+RETURNS TABLE (
+  grid_id INTEGER,
+  longitude1 NUMERIC(15, 12),
+  latitude1 NUMERIC(15, 12),
+  longitude2 NUMERIC(15, 12),
+  latitude2 NUMERIC(15, 12)
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT g.grid_id, g.longitude1, g.latitude1, g.longitude2, g.latitude2
+      FROM analysis."Grids" AS g;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
