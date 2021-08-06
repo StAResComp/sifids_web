@@ -9,6 +9,7 @@ class Dump {
     private $startDate = NULL;
     private $endDate = NULL;
     private $db = NULL;
+    private $fh = NULL;
     
     public function __construct(string $action) { //{{{
         $this->action = $action;
@@ -27,30 +28,33 @@ class Dump {
     }
     //}}}
     
-    public function __toString() : string { //{{{
+    public function generateDump() { //{{{
         $filename = '';
         
         // get results from database
         $results = $this->{$this->action}($filename);
         
         // open memory file handle
-        $fh = fopen('php://memory', 'r+');
+        $this->fh = fopen('php://memory', 'r+');
         
         // write CSV data to file handle
         foreach ($results as $row) {
-            fputcsv($fh, $row);
+            fputcsv($this->fh, $row);
         }
         
         // finished
-        rewind($fh);
+        rewind($this->fh);
         
         // headers for CSV as attachment
         header('Content-type: text/csv');
         header(sprintf('Content-disposition: attachment; filename=%s.csv',
                        $filename));
-        
+    }
+    //}}}
+    
+    public function __toString() : string { //{{{
         // send back CSV as string
-        return stream_get_contents($fh);
+        return stream_get_contents($this->fh);
     }
     //}}}
 

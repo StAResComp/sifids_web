@@ -22,6 +22,7 @@ if (isset($_GET['dump']) && in_array($_GET['dump'], $dumpActions)) {
     }
     
     try {
+        $dump->generateDump();
         print $dump;
     }
     catch (\Exception $e) {
