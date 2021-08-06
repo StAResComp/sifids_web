@@ -59,12 +59,16 @@ class Dump {
     //}}}
 
     // return data on trips made within date range
-    private function trips() : array { //{{{
+    private function trips(string &$filename) : array { //{{{
         if (!$this->startDate || !$this->endDate) {
             throw new \Exception('Need start and end dates for trips data');
         }
         
-        return $this->db->dumpTrips($this->startDate, $this->endDate);
+        // set filename
+        $filename = sprintf('trips_%s_%s',
+                            $this->startDate, $this->endDate);
+        
+        return $this->db->dumpTrip($this->startDate, $this->endDate);
     }
     //}}}
 }
