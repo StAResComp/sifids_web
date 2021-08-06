@@ -13,7 +13,7 @@ class Dump {
     public function __construct(string $action) { //{{{
         $this->action = $action;
         
-        $this->db = new DB();
+        $this->db = DB::getInstance();
         $this->db->setFetch(\PDO::FETCH_NUM);
     }
     
