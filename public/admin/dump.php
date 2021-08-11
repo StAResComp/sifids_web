@@ -8,7 +8,8 @@ require_once '../autoload.php';
 
 // valid actions
 $dumpActions = ['trips', 'trip_estimates', 'tracks', 'track_analysis', 
-                'vessels', 'grids', 'app_creels', 'app_catch'];
+                'vessels', 'grids', 
+                'app_creels', 'app_catch', 'app_observations'];
 // form file
 $dumpForm = 'dump.html';
 
