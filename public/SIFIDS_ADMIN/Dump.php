@@ -40,6 +40,7 @@ class Dump {
          case 'track_analysis':
          case 'app_creels':
          case 'app_catch':
+         case 'app_observations':
             if (!$this->startDate || !$this->endDate) {
                 throw new \Exception('Need start and end dates for trips data');
             }
