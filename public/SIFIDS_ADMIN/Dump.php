@@ -124,6 +124,12 @@ class Dump {
         return $this->db->dumpAppCatch($this->startDate, $this->endDate);
     }
     //}}}
+
+    // return data on observations entered into app
+    private function app_observations() : array { //{{{
+        return $this->db->dumpAppObservations($this->startDate, $this->endDate);
+    }
+    //}}}
 }
 
 ?>

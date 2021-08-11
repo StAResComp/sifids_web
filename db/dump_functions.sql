@@ -194,3 +194,33 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
+-- get app observation data
+CREATE OR REPLACE FUNCTION dumpAppObservations ( --{{{
+  in_start_date DATE,
+  in_end_date DATE
+)
+RETURNS TABLE (
+  user_name TEXT,
+  obs_date TIMESTAMP WITHOUT TIME ZONE,
+  animal_name TEXT,
+  obs_count INTEGER,
+  lat NUMERIC(15, 12),
+  lng NUMERIC(15, 12),
+  behaviour TEXT
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT u.user_name, o.obs_date, a.animal_name, o.obs_count, o.lat, o.lng,
+           STRING_AGG(b.behaviour, ';') AS behaviour
+      FROM app.wiobservations AS o
+INNER JOIN app.wirawdata USING (ingest_id)
+INNER JOIN entities."Animals" AS a USING (animal_id)
+ LEFT JOIN "Users" AS u USING (user_id)
+ LEFT JOIN app.wiobservationbehaviours AS b USING (observation_id)
+     WHERE o.obs_date BETWEEN in_start_date and in_end_date
+  GROUP BY o.observation_id, u.user_name, a.animal_name;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
