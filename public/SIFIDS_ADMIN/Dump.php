@@ -38,6 +38,8 @@ class Dump {
          case 'trip_estimates':
          case 'tracks':
          case 'track_analysis':
+         case 'app_creels':
+         case 'app_catch':
             if (!$this->startDate || !$this->endDate) {
                 throw new \Exception('Need start and end dates for trips data');
             }
@@ -108,6 +110,18 @@ class Dump {
     // return data on grids
     private function grids() : array { //{{{
         return $this->db->dumpGrids();
+    }
+    //}}}
+
+    // return data on creels entered into app
+    private function app_creels() : array { //{{{
+        return $this->db->dumpAppCreels($this->startDate, $this->endDate);
+    }
+    //}}}
+
+    // return data on catch entered into app
+    private function app_catch() : array { //{{{
+        return $this->db->dumpAppCatch($this->startDate, $this->endDate);
     }
     //}}}
 }

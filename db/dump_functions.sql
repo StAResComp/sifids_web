@@ -20,6 +20,7 @@ INNER JOIN "Devices" AS d USING (device_id)
   ORDER BY t.trip_date;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
 
 -- get trip estimates between given dates
 CREATE OR REPLACE FUNCTION dumpTripEstimates ( --{{{
@@ -42,6 +43,7 @@ INNER JOIN entities."EstimateTypes" AS et USING (estimate_type_id)
   ORDER BY t.trip_date;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
 
 -- get track data for trips between given dates
 CREATE OR REPLACE FUNCTION dumpTracks ( --{{{
@@ -66,6 +68,7 @@ INNER JOIN "Trips" AS tr USING (trip_id)
   ORDER BY tr.trip_id, t.time_stamp;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
 
 -- get analysed track data for trips between given dates
 CREATE OR REPLACE FUNCTION dumpTrackAnalysis ( --{{{
@@ -93,6 +96,7 @@ INNER JOIN entities."Activities" AS a USING (activity_id)
   ORDER BY tr.trip_id, t.time_stamp;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
 
 -- get vessel data
 CREATE OR REPLACE FUNCTION dumpVessels () --{{{
@@ -121,6 +125,7 @@ INNER JOIN entities."Gears" AS g USING (gear_id)
 INNER JOIN entities."Animals" AS a USING (animal_id);
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
 
 -- get grid square data
 CREATE OR REPLACE FUNCTION dumpGrids () --{{{
@@ -138,3 +143,54 @@ BEGIN
       FROM analysis."Grids" AS g;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+-- get app creel data
+CREATE OR REPLACE FUNCTION dumpAppCreels ( --{{{
+  in_start_date DATE,
+  in_end_date DATE
+)
+RETURNS TABLE (
+  user_name TEXT,
+  activitydate TIMESTAMP WITHOUT TIME ZONE,
+  lat NUMERIC(15, 12),
+  lng NUMERIC(15, 12),
+  notes TEXT
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT u.user_name, c.activitydate, c.lat, c.lng, c.notes
+      FROM app.wicreels AS c
+INNER JOIN app.wirawdata USING (ingest_id)
+ LEFT JOIN "Users" AS u USING (user_id)
+     WHERE c.activitydate BETWEEN in_start_date and in_end_date;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+-- get app catch data
+CREATE OR REPLACE FUNCTION dumpAppCatch ( --{{{
+  in_start_date DATE,
+  in_end_date DATE
+)
+RETURNS TABLE (
+  user_name TEXT,
+  catch_date TIMESTAMP WITHOUT TIME ZONE,
+  animal_name TEXT,
+  caught INTEGER,
+  retained INTEGER
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT u.user_name, c.catch_date, a.animal_name, c.caught, c.retained
+      FROM app.wicatch AS c
+INNER JOIN app.wirawdata USING (ingest_id)
+INNER JOIN entities."Animals" AS a USING (animal_id)
+ LEFT JOIN "Users" AS u USING (user_id)
+     WHERE c.catch_date BETWEEN in_start_date and in_end_date;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
