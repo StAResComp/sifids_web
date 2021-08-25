@@ -12,6 +12,9 @@ tracksLayers <- reactiveValues(
   )
 #}}}
 
+# trips available based on user, dates and vessels selected
+tripsAvailable <- reactiveValues(data = NULL)
+
 # names of map groups
 tracksOverlayGroups <- c(
 #  'bathymetry' = 'Bathymetry',
@@ -270,43 +273,23 @@ tracksGrids <- reactive({
   })
 #}}}
 
-# get trips made by vessel between dates (for all except fishers)
-tracksTrips <- reactive({ 
+# get trips made by vessel between dates (all users)
+observeEvent(input$fetchTrips, {
     #{{{
     # need dates
-    #req(input$tracksDates[1], input$tracksDates[2])
-    dates <- getDateRange(input$tracksDates)
+    dates <- getDateRange(isolate(input$tracksDates))
     if (is.null(dates) || is.na(dates)) {
       return()
     }
 
     # get trips
-    dbProc('tripEstimates', 
+    tripsAvailable$data <- dbProc('tripEstimates', 
       list(user$id, 
-        getArray(input$tracksVessels), 
+        getArray(isolate(input$tracksVessels)), 
         dates[1], dates[2]))
   })
 #}}}
 
-# get trips made by vessel between dates (for fishers)
-tracksFisherTrips <- reactive({ 
-    #{{{
-    # need dates
-    dates <- getDateRange(input$tracksDates)
-    if (is.null(dates) || is.na(dates)) {
-      return()
-    }
-
-    # get trips
-    df <- dbProc('tripEstimates', 
-      list(user$id, 
-        getArray(input$tracksVessels), 
-        dates[1], dates[2]))
-    
-    # now only want columns 1 and 2
-    return(df[c(1,2)])
-  })
-#}}}
 
 # are estimates available for user's tracks
 estimatesAvailable <- reactive({
@@ -325,9 +308,13 @@ eventsAvailable <- reactive({
 # output trips (all users except fishers)
 output$tracksTrips <- DT::renderDataTable({ 
     #{{{
-    datatable(tracksTrips(),
+    if (is.null(tripsAvailable$data)) {
+      return()
+    }
+    
+    datatable(tripsAvailable$data,
       colnames=c('Trip ID', 'Trip', 'Creels (low)*', 'Creels (high)*', 'Distance (km)*'),
-      rownames=FALSE,
+      rownames=FALSE, 
       options=list(columnDefs=list(list(visible=FALSE, targets=c(0))))
       )
   })
@@ -336,7 +323,11 @@ output$tracksTrips <- DT::renderDataTable({
 # output trips (just fishers)
 output$tracksFisherTrips <- DT::renderDataTable({ 
     #{{{
-    datatable(tracksFisherTrips(),
+    if (is.null(tripsAvailable$data)) {
+      return()
+    }
+    
+    datatable(tripsAvailable$data[c(1,2)],
       colnames=c('Trip ID', 'Trip'),
       rownames=FALSE,
       options=list(columnDefs=list(list(visible=FALSE, targets=c(0))))
@@ -426,10 +417,13 @@ observeEvent(input$clearFisherTracks, {
 #}}}
 
 # map showing tracks, use ignoreNULL=F so that event is observed even when no rows selected
-observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, { 
+observeEvent(
+  input$drawMap,
+  ignoreNULL=TRUE, { 
     #{{{
     # get trips in the table and keep just the ones selected in table
-    data <- tracksTrips()
+    #data <- tracksTrips()
+    data <- tripsAvailable$data
     if (length(data) == 0) {
       return()
     }
@@ -456,10 +450,13 @@ observeEvent(input$tracksTrips_rows_selected, ignoreNULL=FALSE, {
 #}}}
 
 # map showing tracks (for fishers), use ignoreNULL=F so that event is observed even when no rows selected
-observeEvent(input$tracksFisherTrips_rows_selected, ignoreNULL=FALSE, { 
+observeEvent(
+  input$drawMap, 
+  ignoreNULL=TRUE, { 
     #{{{
     # get trips in the table and keep just the ones selected in table
-    data <- tracksTrips()
+    #data <- tracksTrips()
+    data <- tripsAvailable$data
     if (length(data) == 0) {
       return()
     }
@@ -737,7 +734,7 @@ output$tracksDownload <- downloadHandler(
   filename = 'tracks.csv',
   
   content = function(file) {
-    write.csv(tracksTrips(), file)
+    write.csv(tripsAvailable$data, file)
   }
   )
 #}}}
@@ -747,7 +744,7 @@ output$tracksFisherDownload <- downloadHandler(
   filename = 'tracks.csv',
   
   content = function(file) {
-    write.csv(tracksFisherTrips(), file)
+    write.csv(tripsAvailable$data[c(1,2)], file)
   }
   )
 #}}}
