@@ -421,6 +421,11 @@ observeEvent(
   input$drawMap,
   ignoreNULL=TRUE, { 
     #{{{
+    req(user$role)
+    if (user$role == 'fisher') {
+      return()
+    }
+    
     # get trips in the table and keep just the ones selected in table
     #data <- tracksTrips()
     data <- tripsAvailable$data
@@ -452,8 +457,13 @@ observeEvent(
 # map showing tracks (for fishers), use ignoreNULL=F so that event is observed even when no rows selected
 observeEvent(
   input$drawMap, 
-  ignoreNULL=TRUE, { 
+  ignoreNULL=FALSE, { 
     #{{{
+    req(user$role)
+    if (user$role != 'fisher') {
+      return()
+    }
+    
     # get trips in the table and keep just the ones selected in table
     #data <- tracksTrips()
     data <- tripsAvailable$data
