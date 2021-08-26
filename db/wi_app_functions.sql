@@ -128,7 +128,7 @@ INNER JOIN entities."Animals" AS a
            CASE WHEN j.num::INTEGER > 0 THEN j.num
                 ELSE NULL
             END
-      FROM JSON_TO_RECORDSET(in_json -> 'creels') AS j
+      FROM JSON_TO_RECORDSET(in_json -> 'gear') AS j
            ("date" TIMESTAMP, latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             notes TEXT, "incidentType" VARCHAR(16), "gearType" VARCHAR(8), num INTEGER)
  LEFT JOIN entities."IncidentTypes" AS i ON (i.incidentTypeName = j."incidentType")
