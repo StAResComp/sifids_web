@@ -119,7 +119,7 @@ INNER JOIN entities."Animals" AS a
       SELECT FOUND;
       
   -- creels observed
-  ELSIF in_json::JSONB ? 'creels' THEN
+  ELSIF in_json::JSONB ? 'gear' THEN
     INSERT
       INTO app.WICreels
            (ingest_id, activityDate, lat, lng, notes, incidentTypeID, incidentGearTypeID, num)
