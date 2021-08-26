@@ -118,7 +118,7 @@ INNER JOIN entities."Animals" AS a
     RETURN QUERY
       SELECT FOUND;
       
-  -- creels observed
+  -- creels/gear observed
   ELSIF in_json::JSONB ? 'gear' THEN
     INSERT
       INTO app.WICreels
@@ -131,8 +131,8 @@ INNER JOIN entities."Animals" AS a
       FROM JSON_TO_RECORDSET(in_json -> 'creels') AS j
            ("date" TIMESTAMP, latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
             notes TEXT)
- LEFT JOIN entities."IncidentTypes" AS i ON (i.incidentTypeName = j.incidentType)
- LEFT JOIN entities."IncidentGearType" AS ig ON (ig.incidentGearTypeName = j.gearType);
+ LEFT JOIN entities."IncidentTypes" AS i ON (i.incidentTypeName = j."incidentType")
+ LEFT JOIN entities."IncidentGearType" AS ig ON (ig.incidentGearTypeName = j."gearType");
             
     RETURN QUERY
       SELECT FOUND;
