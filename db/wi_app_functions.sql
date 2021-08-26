@@ -130,7 +130,7 @@ INNER JOIN entities."Animals" AS a
             END
       FROM JSON_TO_RECORDSET(in_json -> 'creels') AS j
            ("date" TIMESTAMP, latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
-            notes TEXT, "incidentType" VARCHAR(16), "gearType" VARCHAR(8))
+            notes TEXT, "incidentType" VARCHAR(16), "gearType" VARCHAR(8), num INTEGER)
  LEFT JOIN entities."IncidentTypes" AS i ON (i.incidentTypeName = j."incidentType")
  LEFT JOIN entities."IncidentGearTypes" AS ig ON (ig.incidentGearTypeName = j."gearType");
             
