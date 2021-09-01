@@ -13,9 +13,12 @@ library(chron)
 library(randomForest)
 library(lubridate)
 library(dplyr)
+library(geosphere)
+library(nlme)
+library(lme4)
 
 # functions for database
-source('../ShinyApps/app2/db.R', local=FALSE)
+source('../ShinyApps/app/db.R', local=FALSE)
 
 # get date to do analysis for
 argv <- commandArgs(trailingOnly=TRUE)
@@ -42,9 +45,28 @@ GRID_SIZE <- 200
 # period for rediscretisizing data (seconds)
 DISCRETE_TIME <- 60
 
+# stats for distance and length of vessel (m)
+DIST_MEAN <- 384.83
+DIST_SD <- 249.84
+LENGTH_MEAN <- 8.959044
+LENGTH_SD <- 1.606637
+
+# maximum plausible length of haul (m)
+MAX_HAUL_LENGTH <- 2500
+
+# date/time formats
+DATE_FMT <- "%Y-%m-%d %H:%M:%S"
+TIME_FMT <- "%H:%M:%S"
+
 # see if x is empty in some way
 empty <- function(x) { #{{{
   return((!isS4(x) && is.na(x)) || is.null(x) || 0 == length(x) || 0 == nrow(x) || isFALSE(x))
+}
+#}}}
+
+# delete any analysis already done for given date
+deleteAnalysis <- function() { #{{{
+  dbProc('deleteAnalysis', list(date))
 }
 #}}}
 
@@ -64,7 +86,7 @@ getData <- function() { #{{{
 trajectorise <- function(df) { #{{{
   # calculate trajectories within dataframe df
   sp <- SpatialPoints(df[, c("longitude", "latitude")],
-    proj4string=CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0 "))
+    proj4string=CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
   sp2 <- as.data.frame(spTransform(sp, 
       CRS("+proj=utm +zone=33 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")))
 
@@ -81,9 +103,7 @@ trajectorise <- function(df) { #{{{
 }
 #}}}
 
-#**************************
-#7.- Delete observations based on unrealistic speeds 
-#**************************
+# delete observations based on unrealistic speeds 
 filterOnSpeed <- function(trajdf) { #{{{
   # From conversations with observers and fishers, these vessels move at 25 knots maximum - delete any observations where speed greater than 25 knots
   trajdf$speed <- trajdf$dist / trajdf$dt * KNOTS
@@ -135,9 +155,7 @@ filterOnSpeed <- function(trajdf) { #{{{
 }
 #}}}
 
-#**************************
-#8.- Rediscretisize trajectories - every 1 minute
-#**************************
+# rediscretisize trajectories - every 1 minute
 rediscretisize <- function(traj) { #{{{
   # the hauling events are so long (min, max, mean that a 1 minute "ping" ok to identify fishig activities?)
   traj <- redisltraj(na.omit(traj), DISCRETE_TIME, type="time")
@@ -157,8 +175,7 @@ rediscretisize <- function(traj) { #{{{
 }
 #}}}
 
-# Add vessel information  to data frame
-# (not used)
+# add vessel information to data frame
 addVessels <- function(df) { #{{{
   trips_device_vessel <- dbGetQuery(con, 
     sprintf("SELECT * FROM vesselsForAnalysis('%s');", date))
@@ -167,25 +184,27 @@ addVessels <- function(df) { #{{{
   df$trip_id <- gsub(" .*$", "", df$id)
 
   merge(df,
-    trips_device_vessel[, c("trip_id", "vessel_pln", "vessel_name")], 
+    trips_device_vessel[, c("trip_id", 
+      "vessel_pln", "vessel_name", "vessel_length",
+      "gear_name", "animal_code")], 
     by.x="trip_id", by.y="trip_id", all.x=TRUE)
 }
 #}}}
 
 # apply random forest analysis of activity
-randomForest <- function(df) { #{{{
+randomForestHauling <- function(df) { #{{{
+  df$date <- as.POSIXct((df$date), format=DATE_FMT, origin="1970-01-01")
+  df$time <- as.numeric(times(format(df$date, format=TIME_FMT)))
+
   load("model1.rda")
-  
-  df$date <- as.POSIXct((df$date), format="%Y-%m-%d %H:%M:%S", origin="1970-01-01")
-  df$time <- as.numeric(times(format(df$date, format="%H:%M:%S")))
-
   predValid <- as.data.frame(predict(model1, df, type="class"))
-
   df$rf_behaviour <- predValid$`predict(model1, df, type = "class")`
+  
+  # remove rows with NA for trip_id
+  df <- df[!is.na(df$trip_id), ]
 
   # now change if 2 no before and 2 no after yes, then change to no
   # if 2 yes before and 2 yes after no then change to yes
-
   df$rf_behaviour_1 <- lead(df$rf_behaviour, n=1L)
   df$rf_behaviour_2 <- lead(df$rf_behaviour, n=2L)
   df$rf_behaviour__1 <- lag(df$rf_behaviour, n=1L)
@@ -196,20 +215,19 @@ randomForest <- function(df) { #{{{
 
   df$fishing <- ifelse(df$rf_behaviour=="hauling" & df$rf_behaviour_1=="steaming" & df$rf_behaviour_2=="steaming" & df$rf_behaviour__1=="steaming" & df$rf_behaviour__2=="steaming", 
     "steaming",as.character(df$fishing))
+
+  # treat NAs as steaming
+  df$activity <- ifelse(is.na(df$fishing) | 'steaming' == df$fishing, 1, 2)
   
   df
 }
 #}}}
 
-# add contents of dataframe to database
-addToDatabase <- function(df) { #{{{
+# add contents of hauling activity dataframe to database
+addHaulingToDatabase <- function(df) { #{{{
   # get time stamp from pkey field, and trip_id from id
   df$time_stamp <- gsub("^.*\\.", "", df$pkey)
-  df$trip_id <- gsub(" .*$", "", df$id)
-  
-  # treat NAs as steaming
-  df$activity <- ifelse(is.na(df$fishing) | 'steaming' == df$fishing, 1, 2)
-  
+    
   # apply callback function to each row in data frame
   x <- apply(df, 1, 
     function(x) 
@@ -222,9 +240,123 @@ addToDatabase <- function(df) { #{{{
 }
 #}}}
 
+# add distance to database
+addDistanceToDatabase <- function(df) { #{{{
+  # get back trip_id from data frame
+  df$trip_id <- gsub(" .*$", "", df$id)
+  
+  x <- apply(df, 1,
+    function(x)
+      dbProc('addDistanceEstimate', list(x['trip_id'], x['total_dist'])))
+}
+#}}}
+
+# calculate distance per trip
+distancePerTrip <- function(df) { #{{{
+  df$id <- as.factor(df$id)
+  
+  distance <- df %>% 
+    group_by(id) %>% 
+    summarise(total_dist = sum(dist, na.rm=TRUE))
+  
+  distance
+}
+#}}}
+
+# calculate distance per haul
+distancePerHaul <- function(df) { #{{{
+  crow <- df %>% 
+    group_by(haul_group) %>%
+    arrange(haul_group) %>%
+    filter(row_number() == 1 | row_number() == n())
+  
+  # filter out singleton hauls - 95% of observed hauls last more than 1 minute
+  check <- crow %>% count(haul_group)
+  check <- check[check$n > 1, ]
+  sel <- unique(check$haul_group)
+  
+  crow <- crow[crow$haul_group %in% sel, ]
+  
+  crow <- as.data.table(crow)
+  crow[, longitude_end := shift(lon, 1L, type="lead"), by=haul_group]
+  crow[, latitude_end := shift(lat, 1L, type="lead"), by=haul_group]
+  crow[, date_end := shift(date, 1L, type="lead"), by=haul_group]
+  
+  crow <- crow[!is.na(crow$date_end), ]
+  
+  crow$distance <- distHaversine(crow[, c("lon", "lat")], crow[, c("longitude_end", "latitude_end")])
+  
+  # return only hauls below maximum plausible haul length
+  crow[crow$distance < MAX_HAUL_LENGTH, ]
+}
+#}}}
+
+# estimate number of creels used
+creelEstimate <- function(df) { #{{{
+  # reformat date
+  df$date <- as.POSIXct((df$date), format=DATE_FMT)
+  
+  # reorder data by trip ID and timestamp
+  df <- df[order(df$id, df$date), ]
+  
+  # if vessel not hauling then it is steaming
+  df$fishing[is.na(df$fishing)] <- "steaming"
+  
+  # count each episode of consecutive behavious
+  df$counter <- rleid(df$fishing)
+  df$haul_group <- paste(df$id, df$fishing, df$counter)
+  df$haul_group <- as.factor(df$haul_group)
+  
+  # get distance per haul
+  df <- distancePerHaul(df[df$fishing == "hauling", ])
+  
+  # standardise
+  df$distance_crow_st <- (df$distance - DIST_MEAN) / DIST_SD
+  df$overalllength_st <- (df$vessel_length - LENGTH_MEAN) / LENGTH_SD
+  
+  df$newspeciescode <- factor(df$animal_code)
+  
+  # load model for creel estimates
+  load("gm1.rda")
+  
+  prediction <- predict(gm1, newdata=df, re.form=~0, type="response")
+  bootfit <- bootMer(gm1, FUN=function(x)predict(x, df, re.form=NA), nsim=999)
+  
+  df$lci <- apply(bootfit$t, 2, quantile, 0.025, na.rm=TRUE)
+  df$hci <- apply(bootfit$t, 2, quantile, 0.975, na.rm=TRUE)
+  df$fit <- prediction
+  
+  sum <- df %>% 
+    group_by(id) %>%
+    summarise(total_creels = sum(fit), total_creels_high=sum(hci), total_creels_low=sum(lci))
+  
+  sum$total_creels_adj <- as.integer(41.14 + (1.06 * sum$total_creels))
+  sum$total_creels_adj_low <- as.integer(41.14 + (1.06 * sum$total_creels_low))
+  sum$total_creels_adj_high <- as.integer(41.14 + (1.06 * sum$total_creels_high))
+  
+  sum
+}
+#}}}
+
+# add creel estimates to database
+addCreelsToDatabase <- function(df) { #{{{
+  # get back trip_id from data frame
+  df$trip_id <- gsub(" .*$", "", df$id)
+  
+  x <- apply(df, 1,
+    function(x)
+      dbProc('addCreelEstimates', list(x['trip_id'], 
+          x['total_creels_adj'], x['total_creels_adj_low'], x['total_creels_adj_high'])))
+}
+#}}}
+
 main <- function() { #{{{
+  #df <- read.table("2019-12-23_data.txt", sep=",")
   # create connection to database
   global()
+  
+  # delete any analysis for given date
+  deleteAnalysis()
   
   # get data from database
   df <- getData()
@@ -249,16 +381,29 @@ main <- function() { #{{{
   if (empty(df)) {
     return(FALSE)
   }
- 
-  # apply random forest analysis of activity
-  df <- randomForest(df)
+
+  # add vessel information to data frame
+  df <- addVessels(df)
+  #write.table(df, "2019-12-23_data.txt", sep=",")
   
+  # calculate distance per trip
+  distance <- distancePerTrip(df)
+  
+  addDistanceToDatabase(distance)
+  
+  # apply random forest analysis of activity
+  # only for vessels which have pots/creels
+  df <- randomForestHauling(df[df$gear_name == 'Pots creels', ])
   if (empty(df)) {
     return(FALSE)
   }
 
-  # add to database
-  addToDatabase(df)
+  # add hauling activity to database
+  addHaulingToDatabase(df)
+  
+  # estimate creel numbers
+  creels <- creelEstimate(df)
+  addCreelsToDatabase(creels)
 }
 #}}}
 
