@@ -18,7 +18,8 @@ library(nlme)
 library(lme4)
 
 # functions for database
-source('../ShinyApps/app2/db.R', local=FALSE)
+#source('../ShinyApps/app2/db.R', local=FALSE)
+source('../ShinyApps/app/db.R', local=FALSE)
 
 # get date to do analysis for
 argv <- commandArgs(trailingOnly=TRUE)
