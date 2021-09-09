@@ -15,6 +15,7 @@ library(RColorBrewer)   # version 1.1-2
 library(DBI)            # version 0.7
 library(RPostgreSQL)    # version 0.5-2
 library(sf)             # version 0.5-5
+library(sp)
 library(shinydashboard) # version 0.6.0
 library(maps)           # version 3.2.0
 library(DT)             # version 0.2

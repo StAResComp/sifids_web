@@ -17,8 +17,6 @@ trackTab <- tabPanel('Track data',
         # options for fishing events
         uiOutput('tracksFishingEvents'),
         
-        p(actionButton('fetchTrips', 'Fetch trips')),
-        
         # table for displaying trips and selecting tracks
         DT::dataTableOutput('tracksTrips'),
 
@@ -40,11 +38,12 @@ trackTab <- tabPanel('Track data',
         p('Shows how often vessels re-entered 200m square areas while hauling (estimated).')
         ),
       
-      p(actionButton('drawMap', 'Update map')),
-      
       h3('Download data'),
       
-      downloadButton('tracksDownload', 'Download track data')
+      p(
+        downloadButton('tripsDownload', 'Download trip data'),
+        downloadButton('tracksDownload', 'Download track data')
+        )
       ),
     
     # main panel to show map
@@ -73,8 +72,6 @@ trackFisherTab <- tabPanel('Track data',
         # options for fishing events
         uiOutput('tracksFishingEvents'),
 
-        p(actionButton('fetchTrips', 'Fetch trips')),
-        
         # table for displaying trips and selecting tracks
         DT::dataTableOutput('tracksFisherTrips'),
         
@@ -86,11 +83,9 @@ trackFisherTab <- tabPanel('Track data',
         p('Heat map showing where vessels spent time.')
         ),
 
-      p(actionButton('drawMap', 'Update map')),
-      
       h3('Download data'),
       
-      downloadButton('tracksFisherDownload', 'Download track data')
+      downloadButton('tripsFisherDownload', 'Download trip data')
       ),
     
     # main panel to show map
