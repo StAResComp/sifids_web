@@ -699,17 +699,20 @@ BEGIN
     SELECT MIN(trip_date), MAX(trip_date)
       FROM "Trips"
 INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
- LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
-           ) 
+         OR (user_type_name = 'fishery officer'
+         AND EXISTS (SELECT 1 
+                           FROM "UserFisheryOffices" AS uf
+                          WHERE uf.user_id = in_user_id
+                            AND uf.fo_id = v.fo_id))
+           )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
 ;
 END;
@@ -746,23 +749,78 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, latitude, longitude
       FROM "Trips" AS t
-INNER JOIN "Tracks" USING (trip_id)
+INNER JOIN analysis."AnalysedTracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
- LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
-           ) 
+         OR (user_type_name = 'fishery officer'
+             AND EXISTS (SELECT 1 
+                           FROM "UserFisheryOffices" AS uf
+                          WHERE uf.user_id = in_user_id
+                            AND uf.fo_id = v.fo_id))
+           )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
-       AND is_valid = 1
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+/****f* functions_app2.sql/heatMapDataSP
+ * NAME
+ * heatMapDataSP
+ * SYNOPSIS
+ * Get data for heatmap (for all users except fishers)
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of period
+ *   * in_max_date - DATE - end of period
+ * RETURN VALUE
+ * Table of GEOMETRY points
+ ******
+ */
+CREATE OR REPLACE FUNCTION heatMapDataSP ( --{{{
+  in_user_id INTEGER,
+  in_vessels INTEGER[],
+  in_min_date DATE,
+  in_max_date DATE
+)
+RETURNS TABLE (
+  geog GEOMETRY
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT a.geog::GEOMETRY
+      FROM "Trips" AS t
+INNER JOIN analysis."AnalysedTracks" AS a USING (trip_id)
+INNER JOIN analysis."TrackAnalysis" USING (track_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+ LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Users" AS u1 USING (user_id)
+ LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
+ LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+     WHERE (
+            user_type_name IN ('admin', 'researcher')
+         OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer'
+             AND EXISTS (SELECT 1 
+                           FROM "UserFisheryOffices" AS uf
+                          WHERE uf.user_id = in_user_id
+                            AND uf.fo_id = v.fo_id))
+           )
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND trip_date BETWEEN in_min_date AND in_max_date
+       AND analysis."TrackAnalysis".activity_id = 2
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -801,16 +859,10 @@ BEGIN
 INNER JOIN "Tracks" USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
- LEFT JOIN "Users" AS u1 USING (user_id)
- LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
- LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
- LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE (
-            user_type_name IN ('admin', 'researcher')
-         OR u1.user_id = in_user_id
-         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
-           ) 
+ LEFT JOIN "UserVessels" AS uv USING (vessel_id)
+ LEFT JOIN "Users" AS u ON (u.user_id = in_user_id AND u.user_id = uv.user_id)
+ LEFT JOIN entities."UserTypes" AS ut ON u.user_type_id = ut.user_type_id
+     WHERE user_type_name = 'fisher'
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
        AND is_valid = 1
@@ -831,6 +883,8 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
  *   * in_max_date - DATE - end of period
  * RETURN VALUE
  * Table of corner coordinates for each grid square and counts for each square
+ * BUGS
+ * NOT USED
  ******
  */
 CREATE OR REPLACE FUNCTION revisitsMapData ( --{{{
@@ -851,7 +905,7 @@ BEGIN
   RETURN QUERY
     SELECT g.latitude1, g.longitude1, g.latitude2, g.longitude2, COUNT(*)
       FROM "Trips" AS t
-INNER JOIN "Tracks" USING (trip_id)
+INNER JOIN analysis."AnalysedTracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN analysis."Grids" AS g USING (grid_id)
 INNER JOIN "Devices" USING (device_id)
@@ -868,10 +922,66 @@ INNER JOIN "Vessels" USING (vessel_id)
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
-       AND is_valid = 1
+--       AND is_valid = 1
   GROUP BY g.grid_id
     HAVING COUNT(*) > 1
   ORDER BY COUNT(*) ASC
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+/****f* functions_app2.sql/revisitsMapDataSP
+ * NAME
+ * revisitsMapDataSP
+ * SYNOPSIS
+ * Get counts for number of times vessels went in and out of grids
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_vessels - INTEGER ARRAY - IDs of vessels to get data for
+ *   * in_min_date - DATE - start of period
+ *   * in_max_date - DATE - end of period
+ * RETURN VALUE
+ * Table of counts and envelope data
+ ******
+ */
+CREATE OR REPLACE FUNCTION revisitsMapDataSP ( --{{{
+  in_user_id INTEGER,
+  in_vessels INTEGER[],
+  in_min_date DATE,
+  in_max_date DATE
+)
+RETURNS TABLE (
+  counts BIGINT,
+  geog GEOMETRY
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT COUNT(*),
+           ST_MakeEnvelope(longitude1, latitude1, longitude2, latitude2, 4326)
+      FROM "Trips" AS t
+INNER JOIN analysis."AnalysedTracks" USING (trip_id)
+INNER JOIN analysis."TrackAnalysis" USING (track_id)
+INNER JOIN analysis."Grids" AS g USING (grid_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+ LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Users" AS u1 USING (user_id)
+ LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
+ LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+     WHERE (
+            user_type_name IN ('admin', 'researcher')
+         OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer'
+             AND EXISTS (SELECT 1 
+                           FROM "UserFisheryOffices" AS uf
+                          WHERE uf.user_id = in_user_id
+                            AND uf.fo_id = v.fo_id))
+           ) 
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND trip_date BETWEEN in_min_date AND in_max_date
+  GROUP BY g.grid_id
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -914,9 +1024,9 @@ BEGIN
              END,
              'no vessel'
            ) || ' - ' || TO_CHAR(trip_date::DATE, 'dd-mm-yyyy'))::VARCHAR(255), 
-           MAX(low.estimate_value)::INTEGER, 
-           MAX(high.estimate_value)::INTEGER, 
-           (MAX(dist.estimate_value) / 1000)::INTEGER
+           low.estimate_value::INTEGER, 
+           high.estimate_value::INTEGER, 
+           (dist.estimate_value / 1000)::INTEGER
       FROM "Trips" AS t
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN entities."UniqueDevices" USING (unique_device_id)
@@ -928,11 +1038,15 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
- LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher') 
          OR u1.user_id = in_user_id
-         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+         OR (user_type_name = 'fishery officer'
+             AND EXISTS (SELECT 1 
+                           FROM "UserFisheryOffices" AS uf
+                          WHERE uf.user_id = in_user_id
+                            AND uf.fo_id = v.fo_id)
+            )
            ) 
        AND (
             in_vessels IS NULL 
@@ -940,8 +1054,11 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
          OR vessel_id = ANY(in_vessels)
            )
        AND trip_date BETWEEN in_min_date AND in_max_date
-  GROUP BY ut.user_type_name, t.trip_id, device_name, v.vessel_id
-    HAVING COUNT(*) > 1 -- exclude trips with only 1 track
+       AND (trip_date = NOW()::DATE
+         OR (low.estimate_value IS NOT NULL
+          OR high.estimate_value IS NOT NULL
+          OR dist.estimate_value IS NOT NULL)
+           )
   ORDER BY trip_date DESC, vessel_pln ASC
 ;
 END;
@@ -1055,154 +1172,158 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
-/****f* functions_app2.sql/tracksFromTrips
+/****f* functions_app2.sql/tracksFromTripsSP
  * NAME
- * tracksFromTrips
+ * tracksFromTripsSP
  * SYNOPSIS
- * Get track data and activity for given trips
+ * Get track data for given trips
  * ARGUMENTS
  *   * in_user_id - INTEGER - ID of user making request
  *   * in_trips - INTEGER ARRAY - IDs of trips to get data for
  * RETURN VALUE
- * Table with trip IDs, coordinates for tracks, activity IDs and vessel IDs
- * NOTES
- * Creates temporary table to hold all results, and then selects thinned data from this table,
- * so that a fairly constant number of rows are returned.
+ * Table with trip IDs, vessel IDs and tracks in geometry field
  ******
  */
-CREATE OR REPLACE FUNCTION tracksFromTrips ( --{{{
+CREATE OR REPLACE FUNCTION tracksFromTripsSP ( --{{{
   in_user_id INTEGER,
   in_trips INTEGER[]
 )
 RETURNS TABLE (
   trip_id INTEGER,
-  latitude NUMERIC(15,12),
-  longitude NUMERIC(15,12),
-  activity INTEGER,
-  vessel_id INTEGER
+  vessel_id INTEGER,
+  geom GEOMETRY
 )
 AS $FUNC$
 DECLARE
   temp_factor INTEGER;
 BEGIN
-  -- put data into temp table
-  CREATE TEMPORARY TABLE temp_tracks AS
-    SELECT t.trip_id, tr.latitude, tr.longitude, 
-           COALESCE(activity_id, 1) AS activity, -- not fishing when no activity present
-           t.trip_date, tr.time_stamp, ROW_NUMBER() OVER (ORDER BY t.trip_date, tr.time_stamp),
-           v.vessel_id
+  RETURN QUERY
+    SELECT t.trip_id, v.vessel_id, ST_MakeLine(geog::GEOMETRY ORDER BY tr.time_stamp)
       FROM "Trips" AS t
 INNER JOIN "Tracks" AS tr USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN analysis."TrackAnalysis" USING (track_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
- LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
-           ) 
+         OR (user_type_name = 'fishery officer'
+             AND EXISTS (SELECT 1 
+                           FROM "UserFisheryOffices" AS uf
+                          WHERE uf.user_id = in_user_id
+                            AND uf.fo_id = v.fo_id))
+           )
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
        AND is_valid = 1
-;
-
-  -- get number of rows
-  SELECT (COUNT(*) / 1000)::INTEGER FROM temp_tracks INTO temp_factor;
-
-  -- decide if temp_tracks needs to be thinned
-  IF temp_factor > 1 THEN
-    DELETE 
-      FROM temp_tracks AS t
-     WHERE MOD(t.row_number, temp_factor) <> 0 -- thin using modulo of row number
-       AND t.activity = 1; -- and no fishing activity
-  END IF;
-
-  -- send back (possibly) thinned data
-  RETURN QUERY
-    SELECT t.trip_id, t.latitude, t.longitude, t.activity, t.vessel_id
-      FROM temp_tracks AS t
-  ORDER BY t.trip_date, t.time_stamp
-;
-
-  -- finished with temp table
-  DROP TABLE temp_tracks
+  GROUP BY t.trip_id, v.vessel_id
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
-/****f* functions_app2.sql/analysedTracksFromTrips
+/****f* functions_app2.sql/analysedTracksFromTripsSP
  * NAME
- * analysedTracksFromTrips
+ * analysedTracksFromTripsSP
  * SYNOPSIS
  * Similar to tracksFromTrips, but use analysed track data
  * ARGUMENTS
  *   * in_user_id - INTEGER - ID of user making request
  *   * in_trips - INTEGER ARRAY - trips for which to get analysed data
  * RETURN VALUE
- * Table with trip IDs, coordinates for tracks and activity at track points
+ * Table with activity and points as GEOMETRY
  ******
  */
-CREATE OR REPLACE FUNCTION analysedTracksFromTrips ( --{{{
+CREATE OR REPLACE FUNCTION analysedTracksFromTripsSP ( --{{{
   in_user_id INTEGER,
   in_trips INTEGER[]
 )
 RETURNS TABLE (
   trip_id INTEGER,
-  latitude NUMERIC(15,12),
-  longitude NUMERIC(15,12),
-  activity INTEGER
+  activity INTEGER,
+  geom GEOMETRY
 )
 AS $FUNC$
 DECLARE
   temp_factor INTEGER;
 BEGIN
-  -- put data into temp table
-  CREATE TEMPORARY TABLE temp_tracks AS
-    SELECT t.trip_id, tr.latitude, tr.longitude, COALESCE(activity_id, 1) AS activity, -- not fishing when no activity present
-           t.trip_date, tr.time_stamp, ROW_NUMBER() OVER (ORDER BY t.trip_date, tr.time_stamp)
+  RETURN QUERY
+    SELECT t.trip_id, ta.activity_id, a.geog::GEOMETRY
       FROM "Trips" AS t
-INNER JOIN analysis."AnalysedTracks" AS tr USING (trip_id)
 INNER JOIN "Devices" USING (device_id)
-INNER JOIN analysis."TrackAnalysis" USING (track_id)
- LEFT JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN analysis."AnalysedTracks" AS a USING (trip_id)
+INNER JOIN analysis."TrackAnalysis" AS ta USING (track_id)
  LEFT JOIN "UserVessels" USING (vessel_id)
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
- LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
             user_type_name IN ('admin', 'researcher')
          OR u1.user_id = in_user_id
-         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
-           ) 
-       AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
+         OR (user_type_name = 'fishery officer'
+        AND EXISTS (SELECT 1 
+                      FROM "UserFisheryOffices" AS uf
+                     WHERE uf.user_id = in_user_id
+                       AND uf.fo_id = v.fo_id))
+                   )
+        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
+  ORDER BY t.trip_id, a.time_stamp
 ;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
 
-  -- get number of rows
-  SELECT (COUNT(*) / 1000)::INTEGER FROM temp_tracks INTO temp_factor;
-
-  -- decide if temp_tracks needs to be thinned
-  IF temp_factor > 1 THEN
-    DELETE 
-      FROM temp_tracks AS t
-     WHERE MOD(t.row_number, temp_factor) <> 0 -- thin using modulo of row number
-       AND t.activity = 1; -- and no fishing activity
-  END IF;
-
-  -- send back (possibly) thinned data
+/****f* functions_app2.sql/trackDataFromTrips
+ * NAME
+ * trackDataFromTrips
+ * SYNOPSIS
+ * Get track data (with activity) from given trips
+ * ARGUMENTS
+ *   * in_user_id - INTEGER - ID of user making request
+ *   * in_trips - INTEGER ARRAY - trips for which to get analysed data
+ * RETURN VALUE
+ * Table with activity and points as lat/lng
+ ******
+ */
+CREATE OR REPLACE FUNCTION trackDataFromTrips ( --{{{
+  in_user_id INTEGER,
+  in_trips INTEGER[]
+)
+RETURNS TABLE (
+  trip_id INTEGER,
+  activity INTEGER,
+  lat NUMERIC(15, 12),
+  lng NUMERIC(15, 12)
+)
+AS $FUNC$
+DECLARE
+  temp_factor INTEGER;
+BEGIN
   RETURN QUERY
-    SELECT t.trip_id, t.latitude, t.longitude, t.activity
-      FROM temp_tracks AS t
-  ORDER BY t.trip_date, t.time_stamp
-;
-
-  -- finished with temp table
-  DROP TABLE temp_tracks
+    SELECT t.trip_id, ta.activity_id, a.latitude, a.longitude
+      FROM "Trips" AS t
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN analysis."AnalysedTracks" AS a USING (trip_id)
+INNER JOIN analysis."TrackAnalysis" AS ta USING (track_id)
+ LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Users" AS u1 USING (user_id)
+ LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
+ LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
+     WHERE (
+            user_type_name IN ('admin', 'researcher')
+         OR u1.user_id = in_user_id
+         OR (user_type_name = 'fishery officer'
+        AND EXISTS (SELECT 1 
+                      FROM "UserFisheryOffices" AS uf
+                     WHERE uf.user_id = in_user_id
+                       AND uf.fo_id = v.fo_id))
+                   )
+        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
+  ORDER BY t.trip_id, a.time_stamp
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
@@ -1913,13 +2034,15 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT v.vessel_id, v.vessel_pln
-      FROM "Attributes" AS a2
-INNER JOIN "Devices" USING (device_id)
+      FROM "Devices" AS d
 INNER JOIN "Vessels" AS v USING (vessel_id)
          , "Users"
 INNER JOIN entities."UserTypes" USING (user_type_id)
      WHERE user_id = in_user_id
        AND user_type_name = 'admin'
+       AND EXISTS (SELECT 1
+                     FROM "Attributes" As a
+                    WHERE a.device_id = d.device_id)
   GROUP BY v.vessel_id
   ORDER BY v.vessel_pln
 ;

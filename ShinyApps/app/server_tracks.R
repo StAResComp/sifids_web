@@ -1,19 +1,14 @@
 # initialise list of selected tracks
-tracksSelected <- reactiveValues(
-  #{{{
-  tracks = c()
-  )
-#}}}
+tracksSelected <- reactiveValues(tracks = c())
 
 # remember which layers have been loaded
-tracksLayers <- reactiveValues(
-  #{{{
-  loaded = c()
-  )
-#}}}
+tracksLayers <- reactiveValues(loaded = c())
 
 # trips available based on user, dates and vessels selected
 tripsAvailable <- reactiveValues(data = NULL)
+
+# remember previous value of map type
+oldMapType <- reactiveVal('tracks')
 
 # names of map groups
 tracksOverlayGroups <- c(
@@ -48,23 +43,14 @@ tracksFishingEventOptions <- c(
   'Pot' = 'Pot'
   )
 
-# clear selected tracks from map
-clearTracks <- function(selectedTracks) {
+# clear tracks from map
+clearTracks <- function(mapType, trips) {
   #{{{
   map <- leafletProxy("tracksMap")
   
-  # remove tracks that were selected, but not anymore
-  #oldTracks <- tracksSelected$tracks[!(tracksSelected$tracks %in% selectedTracks)]
-  oldTracks <- tracksSelected$tracks
-  
-  for (group in oldTracks) {
-    map <- clearGroup(map, group=paste0('trip', group))
+  for (t in trips) {
+    map <- clearGroup(map, paste0(mapType, t))
   }
-  
-  # remember new selected tracks
-  tracksSelected$tracks <- selectedTracks
-  # forget selected tracks
-  #tracksSelected$tracks <- c()
 }
 #}}}
 
@@ -117,7 +103,7 @@ mapLatestPoints <- function(latestPoints) { #{{{
 #}}}
 
 # draw tracks as lines on map
-mapTrackLines <- function(tracks) { #{{{
+mapTrackLinesSP <- function(tracks) { #{{{
   # have tracks, so add them to map
   if (length(tracks) == 0) {
     return()
@@ -126,28 +112,27 @@ mapTrackLines <- function(tracks) { #{{{
   # get map proxy
   map <- leafletProxy("tracksMap")
   
-  # get factors for vessel IDs for track colours
-  tracks$colour <- as.numeric(factor(tracks$vessel_id))
+  # colour by vessel when there are multiple vessels, else by trip
+  if (length(unique(tracks$vessel_id)) > 1) {
+    tracks$colour <- as.numeric(factor(tracks$vessel_id))
+  } else {
+    tracks$colour <- as.numeric(factor(tracks$trip_id))
+  }
 
   # different colours for different vessels' tracks
   pal <- colorFactor("RdYlBu", tracks$colour)
   
   # split tracks into trips
-  for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
-    group <- paste0('trip', trip[1,]$trip_id)
-    
-    map <- addPolylines(map,
-      data=trip,
-      lat=~latitude, lng=~longitude,
-      color=pal(trip$colour),
-      opacity=1, group=group, 
-      options=pathOptions(pane="tracks"))
-  }
+  map <- addPolylines(map,
+    data=tracks$geom,
+    color=pal(tracks$colour),
+    fillOpacity=1, 
+    group=paste0('tracks', tracks$trip_id),
+    options=pathOptions(pane="tracks"))
 }
 #}}}
 
-# draw tracks as dots on map
-mapTrackDots <- function(tracks) { #{{{
+mapTrackDotsSP <- function(tracks) { #{{{
   # have tracks, so add them to map
   if (length(tracks) == 0) {
     return()
@@ -158,16 +143,12 @@ mapTrackDots <- function(tracks) { #{{{
   
   pal <- colorFactor(c('blue', 'red'), c(1, 2))
 
-  for (trip in split(tracks, list(tracks$trip_id), drop=TRUE)) {
-    # use same group as for trip tracks
-    group <- paste0('trip', trip[1, ]$trip_id)
-    
-    map <- addCircleMarkers(map,
-      lat=trip$latitude, lng=trip$longitude, 
-      radius=5, stroke=F,
-      color=pal(trip$activity),
-      fillOpacity=1, group=group)
-  }
+  map <- addCircleMarkers(map,
+    data=tracks$geom,
+    group=paste0('analysed_tracks', tracks$trip_id),
+    radius=3, stroke=F,
+    color=pal(tracks$activity),
+    fillOpacity=1, options=pathOptions(pane="tracks"))
 }
 #}}}
 
@@ -180,27 +161,29 @@ mapTracksAndEvents <- function(newTracks) { #{{{
   }
   
   # join selected tracks and get data
-  trkArr <- sprintf('{%s}', paste(newTracks, collapse=","))
+  trkArr <- sprintf("{%s}", paste(newTracks, collapse=","))
   
   # unanalysed tracks as lines
   if (input$tracksMapType == 'tracks') {
-    tracks <- dbProc('tracksFromTrips', list(user$id, trkArr))
+    tracks <- dbProcST('tracksFromTripsSP', 
+      list(user$id, sprintf("'%s'", trkArr)))
     
     if (length(tracks) == 0) {
       return()
     }
     
-    mapTrackLines(tracks)
+    mapTrackLinesSP(tracks)
   }
   # analysed tracks as dots
   else if (input$tracksMapType == 'analysed_tracks') {
-    tracks <- dbProc('analysedTracksFromTrips', list(user$id, trkArr))
+    tracks <- dbProcST('analysedTracksFromTripsSP', 
+      list(user$id, sprintf("'%s'", trkArr)))
     
     if (length(tracks) == 0) {
       return()
     }
     
-    mapTrackDots(tracks)
+    mapTrackDotsSP(tracks)
   }
   
   # get latest points (today) for vessels (in any selected trips)
@@ -209,12 +192,26 @@ mapTracksAndEvents <- function(newTracks) { #{{{
   mapLatestPoints(latestPoints)
   
   # have fishing events
-  if (!is.null(input$tracksEvents)) {
-    eventsArr <- sprintf('{%s}', paste(input$tracksEvents, collapse=","))
-    events <- dbProc('eventsFromTrips', list(user$id, trkArr, eventsArr))
-    
-    mapEvents(events)
+#  if (!is.null(input$tracksEvents)) {
+#    eventsArr <- sprintf('{%s}', paste(input$tracksEvents, collapse=","))
+#    events <- dbProc('eventsFromTrips', list(user$id, trkArr, eventsArr))
+#    
+#    mapEvents(events)
+#  }
+}
+#}}}
+
+trackDataDownload <- function() { #{{{
+  # get trips in the table and keep just the ones selected in table
+  data <- tripsAvailable$data
+  if (length(data) == 0) {
+    return()
   }
+  
+  data <- data[input$tracksTrips_rows_selected,]
+  selectedTracks <- data$trip_id
+  
+  dbProc('trackDataFromTrips', list(user$id, getArray(selectedTracks)))
 }
 #}}}
 
@@ -226,7 +223,7 @@ tracksDates <- reactive({
 #}}}
 
 # get track (when hauling) using vessels and dates for heat map
-tracksHeat <- reactive({ 
+tracksHeatSP <- reactive({ 
     #{{{
     # need dates
     dates <- getDateRange(input$tracksDates)
@@ -234,10 +231,11 @@ tracksHeat <- reactive({
       return()
     }
 
-    dbProc('heatMapData', 
+    dbProcST('heatMapDataSP', 
       list(user$id, 
-        getArray(input$tracksVessels), 
-        dates[1], dates[2]))
+        sprintf("'%s'", getArray(input$tracksVessels)),
+        sprintf("'%s'", dates[1]), 
+        sprintf("'%s'", dates[2])))
   })
 #}}}
 
@@ -257,8 +255,8 @@ tracksFisherHeat <- reactive({
   })
 #}}}
 
-# get grids visited more than once
-tracksGrids <- reactive({ 
+# get grids visited
+tracksGridsSP <- reactive({ 
     #{{{
     # need dates
     dates <- getDateRange(input$tracksDates)
@@ -266,18 +264,22 @@ tracksGrids <- reactive({
       return()
     }
 
-    dbProc('revisitsMapData', 
+    dbProcST('revisitsMapDataSP', 
       list(user$id, 
-        getArray(input$tracksVessels), 
-        dates[1], dates[2]))
+        sprintf("'%s'", getArray(input$tracksVessels)), 
+        sprintf("'%s'", dates[1]), 
+        sprintf("'%s'", dates[2])))
   })
 #}}}
 
 # get trips made by vessel between dates (all users)
-observeEvent(input$fetchTrips, {
+observeEvent({
+    input$tracksDates
+    input$tracksVessels
+  }, {
     #{{{
     # need dates
-    dates <- getDateRange(isolate(input$tracksDates))
+    dates <- getDateRange(input$tracksDates)
     if (is.null(dates) || is.na(dates)) {
       return()
     }
@@ -285,9 +287,9 @@ observeEvent(input$fetchTrips, {
     # get trips
     tripsAvailable$data <- dbProc('tripEstimates', 
       list(user$id, 
-        getArray(isolate(input$tracksVessels)), 
+        getArray(input$tracksVessels), 
         dates[1], dates[2]))
-  })
+  }, ignoreNULL=FALSE)
 #}}}
 
 
@@ -417,9 +419,11 @@ observeEvent(input$clearFisherTracks, {
 #}}}
 
 # map showing tracks, use ignoreNULL=F so that event is observed even when no rows selected
-observeEvent(
-  input$drawMap,
-  ignoreNULL=TRUE, { 
+observeEvent({
+    input$tracksTrips_rows_selected
+    input$tracksMapType
+  },
+  ignoreNULL=FALSE, { 
     #{{{
     req(user$role)
     if (user$role == 'fisher') {
@@ -427,7 +431,6 @@ observeEvent(
     }
     
     # get trips in the table and keep just the ones selected in table
-    #data <- tracksTrips()
     data <- tripsAvailable$data
     if (length(data) == 0) {
       return()
@@ -436,27 +439,36 @@ observeEvent(
     data <- data[input$tracksTrips_rows_selected,]
     selectedTracks <- data$trip_id
     
-    if (is.null(input$tracksMapType) || 
-        (input$tracksMapType != 'tracks' && input$tracksMapType != 'analysed_tracks')) {
-      clearTracks(selectedTracks)
-      return()
+    # not map showing tracks
+    if (is.null(input$tracksMapType) || (input$tracksMapType != 'tracks' && input$tracksMapType != 'analysed_tracks')) {
+      clearTracks(oldMapType(), selectedTracks) # clear all tracks
+      
+      oldMapType(input$tracksMapType) # remember map type
+      
+      # changed map type
+    } else if (input$tracksMapType != oldMapType()) {
+      clearTracks(oldMapType(), selectedTracks) # clear all tracks
+      mapTracksAndEvents(selectedTracks) # display all tracks using new type
+      oldMapType(input$tracksMapType) # remember map type
+      
+      # selected rows changed
+    } else {
+      # get trips no longer selected
+      clearTracks(oldMapType(),
+        tracksSelected$tracks[!(tracksSelected$tracks %in% selectedTracks)])
+      # only get tracks for trips not already selected
+      mapTracksAndEvents(selectedTracks[!(selectedTracks %in% tracksSelected$tracks)])
     }
     
-    clearTracks(selectedTracks)
-    
-    # only get tracks for trips not already selected
-    #newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
-    
-    # put track lines, latest points and events on map
-    #mapTracksAndEvents(newTracks)
-    mapTracksAndEvents(selectedTracks)
-    
+    tracksSelected$tracks <- selectedTracks # remember new selected tracks
   })
 #}}}
 
 # map showing tracks (for fishers), use ignoreNULL=F so that event is observed even when no rows selected
-observeEvent(
-  input$drawMap, 
+observeEvent({
+    input$tracksFisherTrips_rows_selected
+    input$tracksMapType
+  },
   ignoreNULL=FALSE, { 
     #{{{
     req(user$role)
@@ -465,7 +477,6 @@ observeEvent(
     }
     
     # get trips in the table and keep just the ones selected in table
-    #data <- tracksTrips()
     data <- tripsAvailable$data
     if (length(data) == 0) {
       return()
@@ -473,19 +484,21 @@ observeEvent(
     
     data <- data[input$tracksFisherTrips_rows_selected,]
     selectedTracks <- data$trip_id
-
+    
+    # not map showing tracks
     if (is.null(input$tracksMapType) || input$tracksMapType != 'tracks') {
-      clearTracks(selectedTracks)
-      return()
+      clearTracks(oldMapType(), selectedTracks) # clear all tracks
+      oldMapType(input$tracksMapType) # remember map type
+      
+      # selected rows changed
+    } else {
+      clearTracks(oldMapType(),
+        tracksSelected$tracks[!(tracksSelected$tracks %in% selectedTracks)])
+      # only get tracks for trips not already selected
+      mapTracksAndEvents(selectedTracks[!(selectedTracks %in% tracksSelected$tracks)])
     }
     
-    # only get tracks for trips not already selected
-    newTracks <- selectedTracks[!(selectedTracks %in% tracksSelected$tracks)]
-
-    # put track lines, latest points and events on map
-    mapTracksAndEvents(newTracks)
-    
-    clearTracks(selectedTracks)
+    tracksSelected$tracks <- selectedTracks # remember new selected tracks
   })
 #}}}
 
@@ -644,10 +657,12 @@ observe({
     table = dataTableProxy('tracksTrips')
     selectRows(table, NULL)
 
-    tracks <- tracksHeat()
+    tracks <- tracksHeatSP()
     
     if (length(tracks) > 0) {
-      map <- addHeatmap(map, lng=~long, lat=~lat, group="heat", blur=25, max=0.1, radius=15, data=tracks)
+      map <- addHeatmap(map, 
+        group="heat", blur=25, max=0.1, radius=15, 
+        data=tracks$geog)
     }
   })
 #}}}
@@ -696,16 +711,20 @@ observe({
       map <- clearGroup(map, group=track)
     }
     
-    table = dataTableProxy('tracksTrips')
+    table <- dataTableProxy('tracksTrips')
     selectRows(table, NULL)
     
-    grids <- tracksGrids()
+    grids <- tracksGridsSP()
     
     if (length(grids) > 0) {
       pal <- colorNumeric("viridis", grids$counts)
       
-      map <- addRectangles(map, lng1=~long1, lat1=~lat1, lng2=~long2, lat2=~lat2, fillColor=~pal(counts), fillOpacity=0.8, stroke=FALSE, data=grids, group="revisits")
-      map <- addLegend(map, position="bottomright", pal=pal, values=grids$count, title="# revisits")
+      map <- addPolygons(map, 
+        fillColor=pal(grids$counts), fillOpacity=0.8, 
+        stroke=FALSE, data=grids, group="revisits")
+      
+      map <- addLegend(map, position="topright", 
+        pal=pal, values=grids$count, title="# hauling visits")
     }
   })
 #}}}
@@ -739,9 +758,10 @@ output$tracksMap <- renderLeaflet({
   })
 #}}}
 
-output$tracksDownload <- downloadHandler(
+# download trip/track data
+output$tripsDownload <- downloadHandler(
   #{{{
-  filename = 'tracks.csv',
+  filename = 'trips.csv',
   
   content = function(file) {
     write.csv(tripsAvailable$data, file)
@@ -749,9 +769,19 @@ output$tracksDownload <- downloadHandler(
   )
 #}}}
 
-output$tracksFisherDownload <- downloadHandler(
+output$tracksDownload <- downloadHandler(
   #{{{
   filename = 'tracks.csv',
+  
+  content = function(file) {
+    write.csv(trackDataDownload(), file)
+  }
+  )
+#}}}
+
+output$tripssFisherDownload <- downloadHandler(
+  #{{{
+  filename = 'trips.csv',
   
   content = function(file) {
     write.csv(tripsAvailable$data[c(1,2)], file)
