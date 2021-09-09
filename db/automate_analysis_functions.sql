@@ -309,3 +309,30 @@ BEGIN
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
+
+-- delete any analysis for given date
+CREATE OR REPLACE FUNCTION deleteAnalysis ( --{{{
+  in_date DATE
+)
+RETURNS TABLE (
+  deleted BOOLEAN
+)
+AS $FUNC$
+BEGIN
+  DELETE
+    FROM analysis."AnalysedTracks"
+   WHERE trip_id IN (SELECT trip_id
+                       FROM "Trips"
+                      WHERE trip_date = in_date);
+                      
+  DELETE
+    FROM analysis."Estimates"
+   WHERE trip_id IN (SELECT trip_id
+                       FROM "Trips"
+                      WHERE trip_date = in_date);
+
+  RETURN QUERY
+    SELECT FOUND;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}

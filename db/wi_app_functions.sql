@@ -118,18 +118,21 @@ INNER JOIN entities."Animals" AS a
     RETURN QUERY
       SELECT FOUND;
       
-  -- creels observed
--- {​"creels":[{​"id":4,"date":"2021-06-29T15:18:55.344Z",
---             "latitude":56.31364200762157,"longitude":-3.0216440354900453,
---             "notes":"this is a test"}​]}​
-  ELSIF in_json::JSONB ? 'creels' THEN
+  -- creels/gear observed
+  ELSIF in_json::JSONB ? 'gear' THEN
     INSERT
       INTO app.WICreels
-           (ingest_id, activityDate, lat, lng, notes)
-    SELECT new_ingest_id, j."date", j.latitude, j.longitude, j.notes
-      FROM JSON_TO_RECORDSET(in_json -> 'creels') AS j
+           (ingest_id, activityDate, lat, lng, notes, incidentTypeID, incidentGearTypeID, num)
+    SELECT new_ingest_id, j."date", j.latitude, j.longitude, j.notes, 
+           i.incidentTypeID, ig.incidentGearTypeID,
+           CASE WHEN j.num::INTEGER > 0 THEN j.num
+                ELSE NULL
+            END
+      FROM JSON_TO_RECORDSET(in_json -> 'gear') AS j
            ("date" TIMESTAMP, latitude NUMERIC(15, 12), longitude NUMERIC(15, 12),
-            notes TEXT);
+            notes TEXT, "incidentType" VARCHAR(16), "gearType" VARCHAR(8), num INTEGER)
+ LEFT JOIN entities."IncidentTypes" AS i ON (i.incidentTypeName = j."incidentType")
+ LEFT JOIN entities."IncidentGearTypes" AS ig ON (ig.incidentGearTypeName = j."gearType");
             
     RETURN QUERY
       SELECT FOUND;
@@ -139,24 +142,6 @@ INNER JOIN entities."Animals" AS a
       SELECT FALSE;
   END IF;
   
-END;
-$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
---}}}
-
-/****f* wi_app_functions.sql/WICreels
- * NAME
- * WICreels
- * SYNOPSIS
- * Trigger function for inserting creel data
- * RETURN VALUE
- * NULL - row already inserted in parent table, so just return NULL.
- ******
- */
-CREATE OR REPLACE FUNCTION WICreelsInsert () --{{{
-RETURNS TRIGGER
-AS $FUNC$
-BEGIN
-    RETURN NULL;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}

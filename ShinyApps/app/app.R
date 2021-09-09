@@ -32,6 +32,9 @@ source('db.R', local=FALSE)
 source('app_ui.R', local=FALSE)
 source('app_server.R', local=FALSE)
 
+# use old version of jQuery
+options(shiny.jquery.version = 1)
+
 shinyApp(
   ui <- appUI,
   server <- appServer,

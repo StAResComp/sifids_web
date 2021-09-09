@@ -65,5 +65,31 @@ CREATE TABLE app.WICreels (
   activityDate TIMESTAMP,
   lat NUMERIC(15, 12),
   lng NUMERIC(15, 12),
-  notes TEXT
+  notes TEXT,
+  incidentTypeID INTEGER REFERENCES entities."IncidentTypes" (incidentTypeID) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  incidentGearTypeID INTEGER REFERENCES entities."IncidentGearTypes" (incidentGearTypeID) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL,
+  num INTEGER DEFAULT NULL
 );
+
+DROP TABLE IF EXISTS entities."IncidentTypes";
+CREATE TABLE entities."IncidentTypes" (
+  incidentTypeID SERIAL PRIMARY KEY,
+  incidentTypeName VARCHAR(16)
+);
+
+INSERT INTO entities."IncidentTypes"
+            (incidentTypeName)
+     VALUES ('lost'),
+            ('found'),
+            ('unmarkedCreel');
+
+DROP TABLE IF EXISTS entities."IncidentGearTypes";
+CREATE TABLE entities."IncidentGearTypes" (
+  incidentGearTypeID SERIAL PRIMARY KEY,
+  incidentGearTypeName VARCHAR(8)
+);
+
+INSERT INTO entities."IncidentGearTypes"
+            (incidentGearTypeName)
+     VALUES ('creel'),
+            ('other');

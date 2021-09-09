@@ -18,7 +18,6 @@ library(nlme)
 library(lme4)
 
 # functions for database
-#source('../ShinyApps/app2/db.R', local=FALSE)
 source('../ShinyApps/app/db.R', local=FALSE)
 
 # get date to do analysis for
@@ -62,6 +61,12 @@ TIME_FMT <- "%H:%M:%S"
 # see if x is empty in some way
 empty <- function(x) { #{{{
   return((!isS4(x) && is.na(x)) || is.null(x) || 0 == length(x) || 0 == nrow(x) || isFALSE(x))
+}
+#}}}
+
+# delete any analysis already done for given date
+deleteAnalysis <- function() { #{{{
+  dbProc('deleteAnalysis', list(date))
 }
 #}}}
 
@@ -194,6 +199,9 @@ randomForestHauling <- function(df) { #{{{
   load("model1.rda")
   predValid <- as.data.frame(predict(model1, df, type="class"))
   df$rf_behaviour <- predValid$`predict(model1, df, type = "class")`
+  
+  # remove rows with NA for trip_id
+  df <- df[!is.na(df$trip_id), ]
 
   # now change if 2 no before and 2 no after yes, then change to no
   # if 2 yes before and 2 yes after no then change to yes
@@ -346,6 +354,9 @@ main <- function() { #{{{
   #df <- read.table("2019-12-23_data.txt", sep=",")
   # create connection to database
   global()
+  
+  # delete any analysis for given date
+  deleteAnalysis()
   
   # get data from database
   df <- getData()

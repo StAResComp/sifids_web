@@ -38,6 +38,7 @@ try {
     /*file_put_contents('/tmp/traccar.json', 
                       json_encode($data, JSON_PRETTY_PRINT), 
                       FILE_APPEND);*/
+    //error_log(json_encode($data, JSON_PRETTY_PRINT));
     
     // convert input JSON string to object and add to database
     addData($data);
