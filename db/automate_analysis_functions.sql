@@ -239,8 +239,9 @@ BEGIN
   -- add analysed track point
     INSERT
       INTO analysis."AnalysedTracks" AS t
-           (latitude, longitude, time_stamp, trip_id)
-    VALUES (in_latitude, in_longitude, in_time_stamp, in_trip_id)
+           (latitude, longitude, time_stamp, trip_id, geog)
+    VALUES (in_latitude, in_longitude, in_time_stamp, in_trip_id,
+            CAST(ST_SetSRID( ST_Point(in_longitude, in_latitude), 4326) as geography))
  RETURNING t.track_id
       INTO track_id_var;
       

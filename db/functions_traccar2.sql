@@ -125,8 +125,9 @@ ON CONFLICT (device_id) DO
            SELECT 0; -- not moved, so send back 0
     ELSE
       RETURN QUERY
-      INSERT INTO "Tracks" AS t (latitude, longitude, time_stamp, trip_id, is_valid)
-           VALUES (in_latitude, in_longitude, in_time_stamp, in_trip_id, in_is_valid)
+      INSERT INTO "Tracks" AS t (latitude, longitude, time_stamp, trip_id, is_valid, geog)
+           VALUES (in_latitude, in_longitude, in_time_stamp, in_trip_id, in_is_valid,
+                   CAST(ST_SetSRID( ST_Point(in_longitude, in_latitude), 4326) as geography))
         RETURNING t.track_id;
     END IF;
 END;
