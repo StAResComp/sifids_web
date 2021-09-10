@@ -98,7 +98,7 @@ mapLatestPoints <- function(latestPoints) { #{{{
     data=latestPoints,
     lat=~latitude, lng=~longitude,
     label=~paste(vessel_name, ' ', time_stamp),
-    group=~paste0('trip', trip_id))
+    group=~paste0('tracks', trip_id))
 }
 #}}}
 
