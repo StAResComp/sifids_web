@@ -100,7 +100,7 @@ DECLARE
 BEGIN
   -- record most recent track point for device
      INSERT
-       INTO LastPointsForDevices
+       INTO "LastPointsForDevices"
             (device_id, time_stamp, latitude, longitude)
      SELECT device_id, in_time_stamp, in_latitude, in_longitude
        FROM "Trips"
