@@ -26,7 +26,8 @@ function addData(\stdClass $data) { //{{{
     
     // get device ID
     if (!$results = $db->getDeviceID($data->device->uniqueId)) {
-        throw new \Exception('Couldn\'t get device ID');
+        throw new \Exception(sprintf('Couldn\'t get device ID %s', 
+                                     $data->device->uniqueId));
     }
     
     $deviceID = $results[0]->device_id;
