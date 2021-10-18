@@ -8,15 +8,25 @@ CREATE OR REPLACE FUNCTION dumpTrip ( --{{{
 RETURNS TABLE (
   trip_id INTEGER,
   trip_date DATE,
-  vessel_id INTEGER
+  vessel_id INTEGER,
+  pln VARCHAR(16),
+  device_id INTEGER,
+  unique_device_id INTEGER,
+  imei TEXT
 )
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT t.trip_id, t.trip_date, d.vessel_id
+    SELECT t.trip_id, t.trip_date, 
+           d.vessel_id, v.vessel_pln, d.device_id, 
+           u.unique_device_id, u.device_string
       FROM "Trips" AS t
 INNER JOIN "Devices" AS d USING (device_id)
-     WHERE t.trip_date BETWEEN in_start_date and in_end_date
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN entities."UniqueDevices" AS u USING (unique_device_id)
+     WHERE t.trip_date BETWEEN in_start_date AND in_end_date
+       AND d.from_date <= in_start_date
+       AND (d.to_date IS NULL OR d.to_date >= in_end_date)
   ORDER BY t.trip_date;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
