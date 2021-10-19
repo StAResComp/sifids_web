@@ -36,7 +36,8 @@ BEGIN
   INSERT INTO "Attributes" (attribute_id, device_id, time_stamp, attribute_value)
        SELECT a.attribute_id, in_device_id, in_time_stamp, in_attribute_value
          FROM entities."AttributeTypes" AS a
-        WHERE a.attribute_name = in_attribute_name;
+        WHERE a.attribute_name = in_attribute_name
+  ON CONFLICT DO NOTHING;
 
   GET DIAGNOSTICS inserted = ROW_COUNT;
   
