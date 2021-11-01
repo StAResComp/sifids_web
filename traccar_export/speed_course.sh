@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # TRACCAR connection
-TRACCAR_PSQL=`grep traccar ~/.pgpass | gawk -F: '{ print "psql --csv -h " $1 " -p " $2 " " $3 " " $4 }'`
+TRACCAR_PSQL=`grep traccar ~/.pgpass | awk -F: '{ print "psql --csv -h " $1 " -p " $2 " " $3 " " $4 }'`
 
 # SQL for extracting data from Traccar
 EXPORT_SQL="SELECT uniqueid, devicetime, speed, course FROM tc_devices AS d INNER JOIN tc_positions AS p ON d.id = p.deviceid WHERE fixtime BETWEEN '%s'::TIMESTAMP WITHOUT TIME ZONE AND '%s'::TIMESTAMP WITHOUT TIME ZONE;"
