@@ -25,4 +25,4 @@ then
   ENDDATE=`date --date "$STARTDATE + 1 day" "+%Y-%m-%d"`
 fi
 
-printf "$EXPORT_SQL" "$STARTDATE" "$ENDDATE" | $TRACCAR_PSQL | tail -n "+2" | $INSERT
+printf "$EXPORT_SQL" "$STARTDATE" "$ENDDATE" | $TRACCAR_PSQL | $INSERT
