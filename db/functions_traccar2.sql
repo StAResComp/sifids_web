@@ -135,3 +135,25 @@ BEGIN
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
+
+-- add attributes from Traccar not present in JSON
+CREATE OR REPLACE FUNCTION addTraccarAttribute ( --{{{
+  in_attribute_type_id INTEGER,
+  in_device_id INTEGER,
+  in_attribute_value NUMERIC,
+  in_time_stamp TIMESTAMP WITH TIME ZONE
+)
+RETURNS TABLE (
+  inserted BOOLEAN
+)
+AS $FUNC$
+BEGIN
+  INSERT
+    INTO "Attributes" (attribute_id, device_id, time_stamp, attribute_value)
+  VALUES (in_attribute_type_id, in_device_id, in_time_stamp, in_attribute_value);
+  
+  RETURN QUERY
+    SELECT FOUND;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
