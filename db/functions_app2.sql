@@ -148,9 +148,9 @@ BEGIN
   INNER JOIN entities."Animals" AS a USING (animal_id)
   INNER JOIN fish1."Headers" USING (header_id)
   INNER JOIN "Uploads" USING (upload_id)
-  INNER JOIN "Devices" USING (device_id)
-  INNER JOIN "Vessels" USING (vessel_id)
-   LEFT JOIN "UserVessels" USING (vessel_id)
+  INNER JOIN "Devices" AS d USING (device_id)
+  INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+   LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -272,9 +272,9 @@ BEGIN
           INNER JOIN entities."Animals" USING (animal_id)
           INNER JOIN fish1."Headers" USING (header_id)
           INNER JOIN "Uploads" USING (upload_id)
-          INNER JOIN "Devices" USING (device_id)
-          INNER JOIN "Vessels" USING (vessel_id)
-           LEFT JOIN "UserVessels" USING (vessel_id)
+          INNER JOIN "Devices" AS d USING (device_id)
+          INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+           LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
            LEFT JOIN "Users" AS u1 USING (user_id)
            LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
            LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -325,9 +325,9 @@ BEGIN
            END
       FROM fish1."Headers"
 INNER JOIN "Uploads" USING (upload_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS dUSING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -369,9 +369,9 @@ BEGIN
       FROM fish1."Rows"
 INNER JOIN fish1."Headers" USING (header_id)
 INNER JOIN "Uploads" USING (upload_id)
-INNER JOIN "Devices" USING (device_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
- LEFT JOIN "Vessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+ LEFT JOIN "UserVessels" AS uv ON d.vessel_id = uv.vessel_id
+ LEFT JOIN "Vessels" AS v ON uv.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -412,9 +412,9 @@ BEGIN
       FROM fish1."Headers" AS h
 INNER JOIN entities."Ports" AS p ON (p.port_id = h.port_of_departure_id)
 INNER JOIN "Uploads" USING (upload_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -454,9 +454,9 @@ BEGIN
       FROM fish1."Headers" AS h
 INNER JOIN entities."Ports" AS p ON (p.port_id = h.port_of_landing_id)
 INNER JOIN "Uploads" USING (upload_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -495,10 +495,10 @@ BEGIN
     SELECT f.fo_id, f.fo_town
       FROM fish1."Headers"
 INNER JOIN "Uploads" USING (upload_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
 INNER JOIN entities."FisheryOffices" AS f USING (fo_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -564,9 +564,9 @@ BEGIN
   INNER JOIN fish1."Rows" USING (header_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
   INNER JOIN "Uploads" USING (upload_id)
-  INNER JOIN "Devices" USING (device_id)
-  INNER JOIN "Vessels" USING (vessel_id)
-   LEFT JOIN "UserVessels" USING (vessel_id)
+  INNER JOIN "Devices" AS d USING (device_id)
+  INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+   LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -655,9 +655,9 @@ BEGIN
 INNER JOIN analysis."FishingEvents" USING (activity_id)
 INNER JOIN "Tracks" USING (track_id)
 INNER JOIN "Trips" using (trip_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -698,9 +698,9 @@ BEGIN
   RETURN QUERY
     SELECT MIN(trip_date), MAX(trip_date)
       FROM "Trips"
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -751,9 +751,9 @@ BEGIN
       FROM "Trips" AS t
 INNER JOIN analysis."AnalysedTracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -803,9 +803,9 @@ BEGIN
       FROM "Trips" AS t
 INNER JOIN analysis."AnalysedTracks" AS a USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -857,9 +857,9 @@ BEGIN
     SELECT t.trip_id, latitude, longitude
       FROM "Trips" AS t
 INNER JOIN "Tracks" USING (trip_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" AS uv USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u ON (u.user_id = in_user_id AND u.user_id = uv.user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u.user_type_id = ut.user_type_id
      WHERE user_type_name = 'fisher'
@@ -908,9 +908,9 @@ BEGIN
 INNER JOIN analysis."AnalysedTracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN analysis."Grids" AS g USING (grid_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -964,9 +964,9 @@ BEGIN
 INNER JOIN analysis."AnalysedTracks" USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" USING (track_id)
 INNER JOIN analysis."Grids" AS g USING (grid_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1028,13 +1028,13 @@ BEGIN
            high.estimate_value::INTEGER, 
            (dist.estimate_value / 1000)::INTEGER
       FROM "Trips" AS t
-INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Devices" AS d USING (device_id)
 INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN analysis."Estimates" AS low ON (t.trip_id = low.trip_id AND low.estimate_type_id = 1)
  LEFT JOIN analysis."Estimates" AS high ON (t.trip_id = high.trip_id AND high.estimate_type_id = 2)
  LEFT JOIN analysis."Estimates" AS dist ON (t.trip_id = dist.trip_id AND dist.estimate_type_id = 3)
- LEFT JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1100,7 +1100,7 @@ BEGIN
            "Tracks".time_stamp, "Tracks".latitude, "Tracks".longitude
       FROM "Tracks"
 INNER JOIN "Trips" AS t USING (trip_id)
-INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Devices" AS d USING (device_id)
 INNER JOIN (SELECT device_id, MAX(trptm.time_stamp) AS time_stamp
               FROM (SELECT "Trips".trip_id, device_id, MAX("Tracks".time_stamp) AS time_stamp
                       FROM "Trips"
@@ -1111,8 +1111,8 @@ INNER JOIN (SELECT device_id, MAX(trptm.time_stamp) AS time_stamp
                   GROUP BY "Trips".trip_id) AS trptm
          GROUP BY device_id) AS dvtm 
      USING (device_id, time_stamp)
- LEFT JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1201,9 +1201,9 @@ BEGIN
     SELECT t.trip_id, v.vessel_id, ST_MakeLine(geog::GEOMETRY ORDER BY tr.time_stamp)
       FROM "Trips" AS t
 INNER JOIN "Tracks" AS tr USING (trip_id)
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1252,11 +1252,11 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, ta.activity_id, a.geog::GEOMETRY
       FROM "Trips" AS t
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
 INNER JOIN analysis."AnalysedTracks" AS a USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" AS ta USING (track_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1305,11 +1305,11 @@ BEGIN
   RETURN QUERY
     SELECT t.trip_id, ta.activity_id, a.latitude, a.longitude
       FROM "Trips" AS t
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
 INNER JOIN analysis."AnalysedTracks" AS a USING (trip_id)
 INNER JOIN analysis."TrackAnalysis" AS ta USING (track_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1359,11 +1359,11 @@ BEGIN
     SELECT t.trip_id, tr.latitude, tr.longitude, a.activity_name
       FROM "Trips" AS t
 INNER JOIN "Tracks" AS tr USING (trip_id)
-INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Devices" AS d USING (device_id)
 INNER JOIN analysis."FishingEvents" USING (track_id)
 INNER JOIN entities."Activities" AS a USING (activity_id)
- LEFT JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+ LEFT JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1501,9 +1501,9 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT MIN(week_start), MAX(week_start)
-      FROM fish1."WeeklyEffort"
-INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+      FROM fish1."WeeklyEffort" AS w
+INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1541,9 +1541,9 @@ BEGIN
            CASE WHEN user_type_name IN ('admin', 'fisher', 'fishery officer') THEN v.vessel_pln
                 WHEN user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
-      FROM fish1."WeeklyEffort"
-INNER JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+      FROM fish1."WeeklyEffort" AS w
+INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1580,11 +1580,11 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT a.animal_id, a.animal_name
-      FROM fish1."WeeklyEffort"
+      FROM fish1."WeeklyEffort" AS w
 INNER JOIN fish1."WeeklyEffortSpecies" USING (weekly_effort_id)
 INNER JOIN entities."Animals" AS a USING (animal_id)
-INNER JOIN "Vessels" USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1660,8 +1660,8 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
-  INNER JOIN "Vessels" USING (vessel_id)
-   LEFT JOIN "UserVessels" USING (vessel_id)
+  INNER JOIN "Vessels" AS v ON e.vessel_id = v.vessel_id
+   LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1743,8 +1743,8 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
-  INNER JOIN "Vessels" USING (vessel_id)
-   LEFT JOIN "UserVessels" USING (vessel_id)
+  INNER JOIN "Vessels" AS v ON e.vessel_id = v.vessel_id
+   LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
@@ -1827,8 +1827,8 @@ BEGIN
         FROM fish1."WeeklyEffort" AS e
   INNER JOIN fish1."WeeklyEffortSpecies" AS es USING (weekly_effort_id)
   INNER JOIN entities."Animals" AS a USING (animal_id)
-  INNER JOIN "Vessels" USING (vessel_id)
-   LEFT JOIN "UserVessels" USING (vessel_id)
+  INNER JOIN "Vessels" AS v ON e.vessel_id = v.vessel_id
+   LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
    LEFT JOIN "Users" AS u1 USING (user_id)
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
