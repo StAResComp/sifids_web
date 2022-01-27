@@ -325,7 +325,7 @@ BEGIN
            END
       FROM fish1."Headers"
 INNER JOIN "Uploads" USING (upload_id)
-INNER JOIN "Devices" AS dUSING (device_id)
+INNER JOIN "Devices" AS d USING (device_id)
 INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
