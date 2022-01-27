@@ -165,7 +165,7 @@ BEGIN
          AND (in_port_departure IS NULL OR in_port_departure = 0 OR port_of_departure_id = in_port_departure)
          AND (in_port_landing IS NULL OR in_port_landing = 0 OR port_of_landing_id = in_port_landing)
          AND (in_fo IS NULL OR in_fo = 0 OR fo_id = in_fo)
-         AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+         AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
     GROUP BY a.animal_name
     ORDER BY a.animal_name;
   END IF;
@@ -289,7 +289,7 @@ BEGIN
                  AND (in_port_departure IS NULL OR in_port_departure = 0 OR port_of_departure_id = in_port_departure)
                  AND (in_port_landing IS NULL OR in_port_landing = 0 OR port_of_landing_id = in_port_landing) 
                  AND (in_fo IS NULL OR in_fo = 0 OR fo_id = in_fo) 
-                 AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+                 AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
     ) AS r USING (week)
     GROUP BY ww.week, r.animal_name
     ORDER BY ww.week, r.animal_name;
@@ -381,7 +381,7 @@ INNER JOIN "Devices" AS d USING (device_id)
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            )
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -667,7 +667,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -713,7 +713,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
            )
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -766,7 +766,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
            )
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
 ;
 END;
@@ -818,7 +818,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
            )
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
        AND analysis."TrackAnalysis".activity_id = 2
 ;
@@ -863,7 +863,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u ON (u.user_id = in_user_id AND u.user_id = uv.user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u.user_type_id = ut.user_type_id
      WHERE user_type_name = 'fisher'
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
        AND is_valid = 1
 ;
@@ -920,7 +920,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
            ) 
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
 --       AND is_valid = 1
   GROUP BY g.grid_id
@@ -979,7 +979,7 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
            ) 
-       AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+       AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
   GROUP BY g.grid_id
 ;
@@ -1051,7 +1051,7 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
        AND (
             in_vessels IS NULL 
          OR in_vessels = '{}' 
-         OR vessel_id = ANY(in_vessels)
+         OR v.vessel_id = ANY(in_vessels)
            )
        AND trip_date BETWEEN in_min_date AND in_max_date
        AND (trip_date = NOW()::DATE
@@ -1671,7 +1671,7 @@ BEGIN
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
-         AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+         AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date) 
          AND (in_animals IS NULL OR in_animals = '{}' OR a.animal_id = ANY(in_animals))
     GROUP BY e.week_start, a.animal_id
@@ -1754,7 +1754,7 @@ BEGIN
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
-         AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+         AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
          AND (in_animals IS NULL OR in_animals = '{}' OR a.animal_id = ANY(in_animals))
     GROUP BY e.week_start, a.animal_id
@@ -1838,7 +1838,7 @@ BEGIN
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
              )
-         AND (in_vessels IS NULL OR in_vessels = '{}' OR vessel_id = ANY(in_vessels))
+         AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
          AND (in_animals IS NULL OR in_animals = '{}' OR a.animal_id = ANY(in_animals))
     GROUP BY e.week_start, a.animal_id
