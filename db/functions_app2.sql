@@ -1155,9 +1155,9 @@ BEGIN
                 WHEN user_type_name = 'researcher' THEN v.vessel_code::VARCHAR(16)
            END
       FROM "Trips" AS t
-INNER JOIN "Devices" USING (device_id)
- LEFT JOIN "Vessels" AS v USING (vessel_id)
- LEFT JOIN "UserVessels" USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+ LEFT JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
+ LEFT JOIN "UserVessels" AS uv ON v.vessel_id = uv.vessel_id
  LEFT JOIN "Users" AS u1 USING (user_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
