@@ -1466,7 +1466,7 @@ BEGIN
 INNER JOIN "Devices" USING (unique_device_id) 
  LEFT JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Trips" USING (device_id) 
-  GROUP BY vessel_id, v.vessel_name, u.device_name, u.device_string 
+  GROUP BY v.vessel_id, v.vessel_name, u.device_name, u.device_string 
   ORDER BY MAX(trip_date) DESC NULLS LAST;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
