@@ -355,8 +355,8 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
         OR u1.user_id = in_user_id -- just see own vessel/s
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
         OR (user_type_name = 'researcher'
-        AND v.vessel_id IN (SELECT vessel_id
-                              FROM "Vessels"
+        AND v.vessel_id IN (SELECT vv.vessel_id
+                              FROM "Vessels" AS vv
                         INNER JOIN "VesselProjects" USING (vessel_id)
                         INNER JOIN "UserProjects" AS up USING (project_id)
                              WHERE up.user_id = u2.user_id))
@@ -1269,8 +1269,8 @@ INNER JOIN "Devices" AS d USING (device_id)
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
         OR (user_type_name = 'researcher'
-         AND v.vessel_id IN (SELECT vessel_id
-                               FROM "Vessels"
+         AND v.vessel_id IN (SELECT vv.vessel_id
+                               FROM "Vessels" AS vv
                          INNER JOIN "VesselProjects" USING (vessel_id)
                          INNER JOIN "UserProjects" AS up USING (project_id)
                               WHERE up.user_id = u2.user_id))
@@ -1325,8 +1325,8 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
          OR (user_type_name = 'researcher'
-         AND v.vessel_id IN (SELECT vessel_id
-                               FROM "Vessels"
+         AND v.vessel_id IN (SELECT vv.vessel_id
+                               FROM "Vessels" AS vv
                          INNER JOIN "VesselProjects" USING (vessel_id)
                          INNER JOIN "UserProjects" AS up USING (project_id)
                               WHERE up.user_id = u2.user_id))
@@ -1691,8 +1691,8 @@ INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
         OR (user_type_name = 'researcher'
-         AND v.vessel_id IN (SELECT vessel_id
-                               FROM "Vessels"
+         AND v.vessel_id IN (SELECT vv.vessel_id
+                               FROM "Vessels" AS vv
                          INNER JOIN "VesselProjects" USING (vessel_id)
                          INNER JOIN "UserProjects" AS up USING (project_id)
                               WHERE up.user_id = u2.user_id))
