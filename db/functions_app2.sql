@@ -66,10 +66,17 @@ BEGIN
                          INNER JOIN "UserVessels" AS uv USING (vessel_id) 
                               WHERE uv.user_id = u.user_id)
              )
-        -- admin/researcher, so get all vessels
-          OR (ut.user_type_name IN ('admin', 'researcher'))
+        -- admin so get all vessels
+          OR (ut.user_type_name = 'admin')
         -- fishery officer, so get vessels from their area
           OR (ut.user_type_name = 'fishery officer' AND uf.user_id = u.user_id)
+        -- researcher, so just vessels in researcher's project/s
+          OR (ut.user_type_name = 'researcher'
+          AND v.vessel_id IN (SELECT vessel_id
+                                FROM "Vessels"
+                          INNER JOIN "VesselProjects" USING (vessel_id)
+                          INNER JOIN "UserProjects" AS up USING (project_id)
+                               WHERE up.user_id = u.user_id))
             )
 ;
 END;
@@ -156,9 +163,15 @@ BEGIN
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
    LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
-              user_type_name IN ('admin', 'researcher') 
+              user_type_name = 'admin' 
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+           OR (user_type_name = 'researcher'
+           AND v.vessel_id IN (SELECT vessel_id
+                                 FROM "Vessels"
+                           INNER JOIN "VesselProjects" USING (vessel_id)
+                           INNER JOIN "UserProjects" AS up USING (project_id)
+                                WHERE up.user_id = u2.user_id))
              )
          AND (in_species IS NULL OR in_species = '{}' OR a.animal_id = ANY(in_species))
          AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
@@ -280,9 +293,15 @@ BEGIN
            LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
            LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
                WHERE (
-                      user_type_name IN ('admin', 'researcher')
+                      user_type_name = 'admin'
                    OR u1.user_id = in_user_id
                    OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+                   OR (user_type_name = 'researcher'
+                   AND v.vessel_id IN (SELECT vessel_id
+                                 FROM "Vessels"
+                           INNER JOIN "VesselProjects" USING (vessel_id)
+                           INNER JOIN "UserProjects" AS up USING (project_id)
+                                WHERE up.user_id = u2.user_id))
                      )
                  AND (in_species IS NULL OR in_species = '{}' OR f.animal_id = ANY(in_species)) 
                  AND (in_min_date IS NULL OR in_max_date IS NULL OR fishing_date BETWEEN in_min_date AND in_max_date)
@@ -332,9 +351,15 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher') -- see all vessels
+     WHERE user_type_name = 'admin' -- see all vessels
         OR u1.user_id = in_user_id -- just see own vessel/s
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+        AND v.vessel_id IN (SELECT vessel_id
+                              FROM "Vessels"
+                        INNER JOIN "VesselProjects" USING (vessel_id)
+                        INNER JOIN "UserProjects" AS up USING (project_id)
+                             WHERE up.user_id = u2.user_id))
   GROUP BY ut.user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -377,9 +402,15 @@ INNER JOIN "Devices" AS d USING (device_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
-            user_type_name IN ('admin', 'researcher') 
+            user_type_name = 'admin' 
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
 ;
@@ -419,9 +450,15 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+        AND v.vessel_id IN (SELECT vessel_id
+                              FROM "Vessels"
+                        INNER JOIN "VesselProjects" USING (vessel_id)
+                        INNER JOIN "UserProjects" AS up USING (project_id)
+                             WHERE up.user_id = u2.user_id))
   GROUP BY p.port_id, p.port_name
   ORDER BY p.port_name
 ;
@@ -461,9 +498,15 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (ut.user_type_name = 'researcher'
+        AND v.vessel_id IN (SELECT vessel_id
+                              FROM "Vessels"
+                        INNER JOIN "VesselProjects" USING (vessel_id)
+                        INNER JOIN "UserProjects" AS up USING (project_id)
+                             WHERE up.user_id = u2.user_id))
   GROUP BY p.port_id, p.port_name
   ORDER BY p.port_name
 ;
@@ -503,9 +546,15 @@ INNER JOIN entities."FisheryOffices" AS f USING (fo_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+        AND v.vessel_id IN (SELECT vessel_id
+                              FROM "Vessels"
+                        INNER JOIN "VesselProjects" USING (vessel_id)
+                        INNER JOIN "UserProjects" AS up USING (project_id)
+                             WHERE up.user_id = u2.user_id))
   GROUP BY f.fo_id, f.fo_town
   ORDER BY f.fo_town
 ;
@@ -571,9 +620,15 @@ BEGIN
    LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
    LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-       WHERE user_type_name IN ('admin', 'researcher')
+       WHERE user_type_name = 'admin'
           OR u1.user_id = in_user_id
           OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+          OR (user_type_name = 'researcher'
+          AND v.vessel_id IN (SELECT vessel_id
+                                FROM "Vessels"
+                          INNER JOIN "VesselProjects" USING (vessel_id)
+                          INNER JOIN "UserProjects" AS up USING (project_id)
+                               WHERE up.user_id = u2.user_id))
     GROUP BY a.animal_id, a.animal_name
     ORDER BY a.animal_name;
   END IF;
@@ -663,9 +718,15 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
 ;
@@ -705,13 +766,19 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
          AND EXISTS (SELECT 1 
                            FROM "UserFisheryOffices" AS uf
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
 ;
@@ -758,13 +825,19 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
              AND EXISTS (SELECT 1 
                            FROM "UserFisheryOffices" AS uf
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -810,13 +883,19 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
              AND EXISTS (SELECT 1 
                            FROM "UserFisheryOffices" AS uf
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            )
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -916,9 +995,15 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -971,13 +1056,19 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
              AND EXISTS (SELECT 1 
                            FROM "UserFisheryOffices" AS uf
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            ) 
        AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
        AND trip_date BETWEEN in_min_date AND in_max_date
@@ -1039,7 +1130,7 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher') 
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
              AND EXISTS (SELECT 1 
@@ -1047,6 +1138,12 @@ INNER JOIN entities."UniqueDevices" USING (unique_device_id)
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id)
             )
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            ) 
        AND (
             in_vessels IS NULL 
@@ -1118,9 +1215,15 @@ INNER JOIN (SELECT device_id, MAX(trptm.time_stamp) AS time_stamp
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
-            user_type_name IN ('admin', 'researcher') 
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            ) 
        AND t.trip_id = ANY(in_trips)
        AND DATE_TRUNC('day', trip_date) = DATE_TRUNC('day', NOW())
@@ -1162,9 +1265,15 @@ INNER JOIN "Devices" AS d USING (device_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
   GROUP BY user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -1208,13 +1317,19 @@ INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
              AND EXISTS (SELECT 1 
                            FROM "UserFisheryOffices" AS uf
                           WHERE uf.user_id = in_user_id
                             AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            )
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips)) 
        AND is_valid = 1
@@ -1261,13 +1376,19 @@ INNER JOIN analysis."TrackAnalysis" AS ta USING (track_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
         AND EXISTS (SELECT 1 
                       FROM "UserFisheryOffices" AS uf
                      WHERE uf.user_id = in_user_id
                        AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
                    )
         AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
   ORDER BY t.trip_id, a.time_stamp
@@ -1314,13 +1435,19 @@ INNER JOIN analysis."TrackAnalysis" AS ta USING (track_id)
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer'
         AND EXISTS (SELECT 1 
                       FROM "UserFisheryOffices" AS uf
                      WHERE uf.user_id = in_user_id
                        AND uf.fo_id = v.fo_id))
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
                    )
         AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
   ORDER BY t.trip_id, a.time_stamp
@@ -1369,9 +1496,15 @@ INNER JOIN entities."Activities" AS a USING (activity_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
      WHERE (
-            user_type_name IN ('admin', 'researcher')
+            user_type_name = 'admin'
          OR u1.user_id = in_user_id
          OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+         OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
            ) 
        AND (in_trips IS NULL OR in_trips = '{}' OR t.trip_id = ANY(in_trips))
        AND (in_events IS NULL OR in_events = '{}' OR a.activity_name = ANY(in_events))
@@ -1508,9 +1641,15 @@ INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -1548,9 +1687,15 @@ INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
   GROUP BY user_type_name, v.vessel_id
   ORDER BY v.vessel_pln
 ;
@@ -1589,9 +1734,15 @@ INNER JOIN "Vessels" AS v ON w.vessel_id = v.vessel_id
  LEFT JOIN "Users" AS u2 ON (u2.user_id = in_user_id)
  LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
  LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
-     WHERE user_type_name IN ('admin', 'researcher')
+     WHERE user_type_name = 'admin'
         OR u1.user_id = in_user_id
         OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+        OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
   GROUP BY a.animal_id
   ORDER BY a.animal_id
 ;
@@ -1667,9 +1818,15 @@ BEGIN
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
    LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
-              user_type_name IN ('admin', 'researcher')
+              user_type_name = 'admin'
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+           OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date) 
@@ -1750,9 +1907,15 @@ BEGIN
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
    LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
-              user_type_name IN ('admin', 'researcher')
+              user_type_name = 'admin'
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+           OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
@@ -1834,9 +1997,15 @@ BEGIN
    LEFT JOIN entities."UserTypes" AS ut ON u2.user_type_id = ut.user_type_id
    LEFT JOIN "UserFisheryOffices" AS uf USING (fo_id)
        WHERE (
-              user_type_name IN ('admin', 'researcher')
+              user_type_name = 'admin'
            OR u1.user_id = in_user_id
            OR (user_type_name = 'fishery officer' AND uf.user_id = in_user_id)
+           OR (user_type_name = 'researcher'
+         AND v.vessel_id IN (SELECT vessel_id
+                               FROM "Vessels"
+                         INNER JOIN "VesselProjects" USING (vessel_id)
+                         INNER JOIN "UserProjects" AS up USING (project_id)
+                              WHERE up.user_id = u2.user_id))
              )
          AND (in_vessels IS NULL OR in_vessels = '{}' OR v.vessel_id = ANY(in_vessels))
          AND (e.week_start BETWEEN in_min_date AND in_max_date)
