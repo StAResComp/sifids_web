@@ -98,8 +98,8 @@ BEGIN
            v.vessel_id, v.vessel_pln, v.vessel_name, v.vessel_length,
            g.gear_name, a.animal_code
       FROM "Trips" AS t
-INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Devices" AS d USING (device_id)
+INNER JOIN "Vessels" AS v ON d.vessel_id = v.vessel_id
 INNER JOIN entities."Gears" AS g USING (gear_id)
 INNER JOIN entities."Animals" AS a USING (animal_id)
      WHERE t.trip_date = in_date;
