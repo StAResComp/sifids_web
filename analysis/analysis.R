@@ -196,7 +196,7 @@ randomForestHauling <- function(df) { #{{{
   df$date <- as.POSIXct((df$date), format=DATE_FMT, origin="1970-01-01")
   df$time <- as.numeric(times(format(df$date, format=TIME_FMT)))
 
-  load("model1.rda")
+  load("model1b.rda")
   predValid <- as.data.frame(predict(model1, df, type="class"))
   df$rf_behaviour <- predValid$`predict(model1, df, type = "class")`
   
@@ -376,24 +376,30 @@ main <- function() { #{{{
   traj <- filterOnSpeed(df)
 
   # redescretisize points
-  df <- rediscretisize(traj)
+  df1 <- rediscretisize(traj)
   
   if (empty(df)) {
     return(FALSE)
   }
 
   # add vessel information to data frame
-  df <- addVessels(df)
+  df1 <- addVessels(df1)
   #write.table(df, "2019-12-23_data.txt", sep=",")
   
   # calculate distance per trip
-  distance <- distancePerTrip(df)
+  distance <- distancePerTrip(df1)
   
   addDistanceToDatabase(distance)
   
+  #foo2 function to cut every 500 metres on traj object
+  
+  #erase points on land - results in df2 dataframe
+  
+  #add code for variable for random forest (R code)
+  
   # apply random forest analysis of activity
   # only for vessels which have pots/creels
-  df <- randomForestHauling(df[df$gear_name == 'Pots creels', ])
+  df2 <- randomForestHauling(df2[df2$gear_name == 'Pots creels', ])
   if (empty(df)) {
     return(FALSE)
   }
