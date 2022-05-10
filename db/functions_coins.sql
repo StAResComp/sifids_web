@@ -95,7 +95,7 @@ INNER JOIN LATERAL (
 ORDER BY diff ASC
    LIMIT 1) AS tr USING (trip_id)
      WHERE to_date IS NULL -- only want devices on vessels
-       AND trip_date = start_time::DATE -- trip from same day as coin reading
+       AND t.trip_date = cr.start_time::DATE -- trip from same day as coin reading
 ;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
