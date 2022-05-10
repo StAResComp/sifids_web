@@ -84,7 +84,7 @@ INNER JOIN "CoinDevice" USING (coin_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN "Vessels" USING (vessel_id)
 INNER JOIN "Trips" AS t USING (device_id)
-INNER JOIN (
+INNER JOIN LATERAL (
   SELECT tra.latitude, tra.longitude, 
          ABS(EXTRACT(EPOCH FROM (start_time - tra.time_stamp))) AS diff, tra.time_stamp,
          tra.trip_id
