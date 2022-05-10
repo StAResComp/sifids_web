@@ -65,6 +65,13 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 CREATE OR REPLACE FUNCTION getCoinData ( --{{{
 )
 RETURNS TABLE (
+  device_name TEXT,
+  vessel_name TEXT,
+  coin_uuid VARCHAR(6),
+  start_time TIMESTAMP WITH TIME ZONE,
+  latitude NUMERIC(15, 12),
+  longitude NUMERIC(15, 12),
+  time_stamp TIMESTAMP WITH TIME ZONE
 )
 AS $FUNC$
 BEGIN
