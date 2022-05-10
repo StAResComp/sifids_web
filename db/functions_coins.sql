@@ -85,10 +85,10 @@ INNER JOIN "Devices" USING (device_id)
 INNER JOIN "Vessels" USING (vessel_id)
 INNER JOIN "Trips" AS t USING (device_id)
 INNER JOIN (
-  SELECT latitude, longitude, 
-         ABS(EXTRACT(EPOCH FROM (start_time - time_stamp))) AS diff, time_stamp,
-         trip_id
-    FROM "Tracks"
+  SELECT tra.latitude, tra.longitude, 
+         ABS(EXTRACT(EPOCH FROM (start_time - tra.time_stamp))) AS diff, tra.time_stamp,
+         tra.trip_id
+    FROM "Tracks" AS tra
    WHERE trip_id = t.trip_id
 ORDER BY diff ASC
    LIMIT 1) AS tr USING (trip_id)
