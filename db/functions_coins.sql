@@ -76,13 +76,14 @@ RETURNS TABLE (
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT device_name, vessel_name, 
+    SELECT u.device_name, v.vessel_name, 
            SUBSTRING(coin_uuid, 27) AS coin_uuid, start_time,
            tr.latitude, tr.longitude, tr.time_stamp
       FROM entities."Coins"
 INNER JOIN "CoinDevice" USING (coin_id)
 INNER JOIN "Devices" USING (device_id)
-INNER JOIN "Vessels" USING (vessel_id)
+INNER JOIN entities."UniqueDevices" as u USING (unique_device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
 INNER JOIN "Trips" AS t USING (device_id)
 INNER JOIN LATERAL (
   SELECT tra.latitude, tra.longitude, 
