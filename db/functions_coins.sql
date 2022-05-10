@@ -81,7 +81,7 @@ BEGIN
            tr.latitude, tr.longitude, tr.time_stamp
       FROM entities."Coins" AS co
 INNER JOIN "CoinDevice" USING (coin_id)
-INNER JOIN "CoinReadings" USING (coin_device_id) AS cr
+INNER JOIN "CoinReadings" AS cr USING (coin_device_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN entities."UniqueDevices" as u USING (unique_device_id)
 INNER JOIN "Vessels" AS v USING (vessel_id)
