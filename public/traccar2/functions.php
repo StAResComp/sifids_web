@@ -10,7 +10,7 @@ function slice(string $str, int $p) : array { //{{{
 //}}}
 
 // parse io385 data and add to database
-function io385(string $data, string $deviceID, string $timestamp) { //{{{
+function io385(string $data, int $deviceID, string $timestamp) { //{{{
     global $db;
     
     // strip of first 2 characters
