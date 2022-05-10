@@ -78,7 +78,7 @@ BEGIN
   RETURN QUERY
     SELECT device_name, vessel_name, 
            SUBSTRING(coin_uuid, 27) AS coin_uuid, start_time,
-           latitude, longitude, time_stamp
+           tr.latitude, tr.longitude, tr.time_stamp
       FROM entities."Coins"
 INNER JOIN "CoinDevice" USING (coin_id)
 INNER JOIN "Devices" USING (device_id)
