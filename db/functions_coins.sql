@@ -60,3 +60,34 @@ BEGIN
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
+
+-- get coin data and closest location for devices
+CREATE OR REPLACE FUNCTION getCoinData ( --{{{
+)
+RETURNS TABLE (
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT device_name, vessel_name, 
+           SUBSTRING(coin_uuid, 27) AS coin_uuid, start_time,
+           latitude, longitude, time_stamp
+      FROM entities."Coins"
+INNER JOIN "CoinDevice" USING (coin_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN "Vessels" USING (vessel_id)
+INNER JOIN "Trips" AS t USING (device_id)
+INNER JOIN (
+  SELECT latitude, longitude, 
+         ABS(EXTRACT(EPOCH FROM (start_time - time_stamp))) AS diff, time_stamp,
+         trip_id
+    FROM "Tracks"
+   WHERE trip_id = t.trip_id
+ORDER BY diff ASC
+   LIMIT 1) AS tr USING (trip_id)
+     WHERE to_date IS NULL -- only want devices on vessels
+       AND trip_date = start_time::DATE -- trip from same day as coin reading
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
