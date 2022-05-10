@@ -69,6 +69,7 @@ RETURNS TABLE (
   vessel_name TEXT,
   coin_uuid VARCHAR(6),
   start_time TIMESTAMP WITH TIME ZONE,
+  signal INTEGER,
   latitude NUMERIC(15, 12),
   longitude NUMERIC(15, 12),
   time_stamp TIMESTAMP WITH TIME ZONE
@@ -78,7 +79,7 @@ BEGIN
   RETURN QUERY
     SELECT u.device_name, v.vessel_name, 
            SUBSTRING(co.coin_uuid, 27)::VARCHAR(6) AS coin_uuid, 
-           cr.start_time,
+           cr.start_time, cr.signal,
            tr.latitude, tr.longitude, tr.time_stamp
       FROM entities."Coins" AS co
 INNER JOIN "CoinDevice" USING (coin_id)
