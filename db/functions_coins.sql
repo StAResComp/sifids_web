@@ -77,9 +77,9 @@ AS $FUNC$
 BEGIN
   RETURN QUERY
     SELECT u.device_name, v.vessel_name, 
-           SUBSTRING(coin_uuid, 27) AS coin_uuid, start_time,
+           SUBSTRING(co.coin_uuid, 27) AS coin_uuid, co.start_time,
            tr.latitude, tr.longitude, tr.time_stamp
-      FROM entities."Coins"
+      FROM entities."Coins" AS co
 INNER JOIN "CoinDevice" USING (coin_id)
 INNER JOIN "Devices" USING (device_id)
 INNER JOIN entities."UniqueDevices" as u USING (unique_device_id)
