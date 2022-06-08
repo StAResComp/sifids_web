@@ -32,4 +32,4 @@ then
   ENDDATE=`date --date "$STARTDATE + 1 day" "+%Y-%m-%d"`
 fi
 
-printf "$EXPORT_SQL" "$IMEI" "$STARTDATE" "$ENDDATE" | $TRACCAR_PSQL #| $INSERT
+printf "$EXPORT_SQL" "$IMEI" "$STARTDATE" "$ENDDATE" | $TRACCAR_PSQL | $INSERT
