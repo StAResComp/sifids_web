@@ -8,19 +8,11 @@ namespace TRACCAR2;
 require_once '../public/autoload.php';
 require_once '../public/traccar2/functions.php';
 
-// read CSV data piped from STDIN
+// rows per transaction
+define('ROWS', 1000);
 
-// get device ID using IMEI
-function getID(string $imei) : int { //{{{
-		global $db;
-		
-		if (!$results = $db->getDeviceID($imei)) {
-				throw new \Exception('Unknown device');
-		}
-		
-		return (int) $results[0]->device_id;
-}
-//}}}
+
+// read CSV data piped from STDIN
 
 // turn row into JSON object
 function makeJSON(array $row) : \stdClass { //{{{
@@ -56,21 +48,33 @@ foreach ($results as $row) {
     $attributes[] = $row->attribute_name;
 }
 
+// remember timestamp
+$ts = '';
+$r = 0;
+
 // open STDIN
 $fh = fopen('php://stdin', 'r');
 
 // loop over lines from STDIN
 while (false !== ($row = fgetcsv($fh))) {
 		try {
-				// remember device IDs from IMEIs
-				if (!isset($ids[$row[0]])) {
-						$ids[$row[0]] = getID($row[0]);
-				}
-				
+        // same timestamp as last row, so skip
+        if ($row[1] == $ts) {
+            continue;
+        }
+        
+        $ts = $row[1]; // remember timestamp
         printf("%s %s\n", $row[0], $row[1]);
         
         $json = makeJSON($row);
         addData($json);
+        
+        // time to refresh transaction
+        ++ $r;
+        if ($r % ROWS == 0) {
+            $db->commit();
+            $db->begin();
+        }
 		}
 		catch (\Throwable $e) {
 				printf("%s\n", $e->getMessage());
