@@ -28,12 +28,12 @@ function makeJSON(array $row) : \stdClass { //{{{
     $json = new \stdClass();
     $json->position = new \stdClass();
     
-    $json->position->deviceTime = $row[5];
+    $json->position->deviceTime = $row[1];
     $json->position->uniqueId = $row[0];
-    $json->position->attributes = json_decode(str_replace('|', ',', $row[14]));
-    $json->position->latitude = (float) $row[8];
-    $json->position->longitude = (float) $row[9];
-    $json->position->valid = 't' == $row[7] ? 1 : 0;
+    $json->position->attributes = json_decode(str_replace('|', ',', $row[2]));
+    $json->position->latitude = (float) $row[3];
+    $json->position->longitude = (float) $row[4];
+    $json->position->valid = 't' == $row[5] ? 1 : 0;
     
     return $json;
 }
