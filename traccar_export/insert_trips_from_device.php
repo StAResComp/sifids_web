@@ -34,6 +34,8 @@ function makeJSON(array $row) : \stdClass { //{{{
     $json->position->latitude = (float) $row[8];
     $json->position->longitude = (float) $row[9];
     $json->position->valid = 't' == $row[7] ? 1 : 0;
+    
+    return $json;
 }
 //}}}
 
