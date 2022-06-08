@@ -30,7 +30,7 @@ function makeJSON(array $row) : \stdClass { //{{{
     
     $json->position->deviceTime = $row[5];
     $json->position->uniqueId = $row[0];
-    $json->position->attributes = json_decode($row[14]);
+    $json->position->attributes = json_decode(str_replace('|', ',', $row[14]));
     $json->position->latitude = (float) $row[8];
     $json->position->longitude = (float) $row[9];
     $json->position->valid = 't' == $row[7] ? 1 : 0;

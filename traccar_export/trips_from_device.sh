@@ -4,7 +4,7 @@
 TRACCAR_PSQL=`grep traccar ~/.pgpass | awk -F: '{ print "psql -t -A -F, -h " $1 " -p " $2 " " $3 " " $4 }'`
 
 # SQL for extracting data from Traccar
-EXPORT_SQL="SELECT d.uniqueid, p.* FROM tc_positions AS p INNER JOIN tc_devices AS d ON p.deviceid = d.id WHERE d.uniqueid = '%s' AND p.devicetime BETWEEN '%s' AND '%s' ORDER BY p.devicetime ASC;"
+EXPORT_SQL="SELECT d.uniqueid, p.devicetime, REPLACE(p.attributes, ',', '|') AS 'attributes', p.latitude, p.longitude, p.valid FROM tc_positions AS p INNER JOIN tc_devices AS d ON p.deviceid = d.id WHERE d.uniqueid = '%s' AND p.devicetime BETWEEN '%s' AND '%s' ORDER BY p.devicetime ASC;"
 
 # script for inserting data into SIFIDS database
 INSERT=./insert_trips_from_device.php
