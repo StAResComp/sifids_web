@@ -66,6 +66,7 @@ while (false !== ($row = fgetcsv($fh))) {
 						$ids[$row[0]] = getID($row[0]);
 				}
 				
+        print_r($row);
         $json = makeJSON($row);
         
         print json_encode($json);
