@@ -74,7 +74,7 @@ while (false !== ($row = fgetcsv($fh))) {
 		}
 		catch (\Throwable $e) {
 				printf("%s\n", $e->getMessage());
-				continue;
+				break;
 		}
 }
 
