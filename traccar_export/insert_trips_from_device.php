@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace TRACCAR2;
 
 require_once '../public/autoload.php';
+require_once '../public/traccar2/functions.php';
 
 // read CSV data piped from STDIN
 
@@ -58,7 +59,6 @@ foreach ($results as $row) {
 $fh = fopen('php://stdin', 'r');
 
 // loop over lines from STDIN
-// IMEI, timestamp, speed, course
 while (false !== ($row = fgetcsv($fh))) {
 		try {
 				// remember device IDs from IMEIs
@@ -66,11 +66,10 @@ while (false !== ($row = fgetcsv($fh))) {
 						$ids[$row[0]] = getID($row[0]);
 				}
 				
-        print_r($row);
-        $json = makeJSON($row);
+        printf("%s %s\n", $row[0], $row[1]);
         
-        print json_encode($json);
-        break;
+        $json = makeJSON($row);
+        addData($json);
 		}
 		catch (\Throwable $e) {
 				printf("%s\n", $e->getMessage());
