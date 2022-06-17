@@ -23,11 +23,15 @@ source('../ShinyApps/app/db.R', local=FALSE)
 # get date to do analysis for
 argv <- commandArgs(trailingOnly=TRUE)
 
-if (length(argv) != 1) {
-  stop("Usage: ./analysis.R YYYY-MM-DD", call.=FALSE)
+if (length(argv) < 1) {
+  stop("Usage: ./analysis.R YYYY-MM-DD [device_id]", call.=FALSE)
 }
 
 date <- argv[1]
+deviceID = NA
+if (length(argv) == 2) {
+  deviceID = as.integer(argv[2])
+}
 
 # parameters for query
 OBVS <- 50 # need more observations than this
@@ -54,6 +58,9 @@ LENGTH_SD <- 1.606637
 # maximum plausible length of haul (m)
 MAX_HAUL_LENGTH <- 2500
 
+# maximum gap between points (in meters)
+MAX_GAP <- 500
+
 # date/time formats
 DATE_FMT <- "%Y-%m-%d %H:%M:%S"
 TIME_FMT <- "%H:%M:%S"
@@ -64,9 +71,19 @@ empty <- function(x) { #{{{
 }
 #}}}
 
+# is gap between two points too big
+gapTooBig <- function(dist) { #{{{
+  return (dist > (MAX_GAP))
+}
+#}}}
+
 # delete any analysis already done for given date
 deleteAnalysis <- function() { #{{{
-  dbProc('deleteAnalysis', list(date))
+  if (is.na(deviceID)) {
+    dbProc('deleteAnalysis', list(date))
+  } else {
+    dbProc('deleteDeviceAnalysis', list(date, deviceID))
+  }
 }
 #}}}
 
@@ -78,7 +95,11 @@ getData <- function() { #{{{
   # and where latitude > 40 and longitude between -8 and 0 (roughly Scottish waters)
   # and the trips have minimum number of observations and length (in meters and seconds)
   # and where vessels are more than 10m from shore
-  dbProc('tracksForAnalysis', list(date, OBVS, METERS, TIME))
+  if (is.na(deviceID)) {
+    dbProc('tracksForAnalysis', list(date, OBVS, METERS, TIME))
+  } else {
+    dbProc('tracksDeviceForAnalysis', list(date, deviceID, OBVS, METERS, TIME))
+  }
 }
 #}}}
 
