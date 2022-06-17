@@ -76,6 +76,84 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
+-- get track data for trips on given date for given device
+CREATE OR REPLACE FUNCTION tracksDeviceForAnalysis ( --{{{
+  in_date DATE,
+  in_device_id INTEGER,
+  in_obvs INTEGER, -- need more observations than this
+  in_meters INTEGER, -- need trip to be longer (in meters) than this
+  in_time INTEGER -- need trip to be longer (in seconds) than this
+)
+RETURNS TABLE (
+  latitude NUMERIC(15,12),
+  longitude NUMERIC(15,12),
+  time_stamp TIMESTAMP WITH TIME ZONE,
+  trip_id INTEGER
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    -- CTE for getting start and stop times for vessel leaving 200m buffer per trip
+    -- https://stackoverflow.com/questions/10614505/window-functions-and-more-local-aggregation/10624628#10624628
+    WITH minmax AS (
+      SELECT t.trip_id, 
+             MIN(t.time_stamp) AS start, 
+             MAX(t.time_stamp) AS stop
+        FROM "Tracks" AS t
+  INNER JOIN "Trips" USING (trip_id)
+       WHERE trip_date = in_date
+         AND device_id = in_device_id
+         AND NOT EXISTS ( -- points outside 200m buffer
+               SELECT 1
+                 FROM geography.scotlandmap2
+                WHERE ST_Contains(buffer_200, ST_SetSRID(ST_MakePoint(t.longitude, t.latitude), 4326)))
+       GROUP BY t.trip_id
+    )
+    SELECT DISTINCT t3.latitude,
+                    t3.longitude, 
+                    t3.time_stamp, 
+                    t3.trip_id
+               FROM (SELECT t2.latitude,
+                            t2.longitude,
+                            MIN(t2.time_stamp) OVER (PARTITION BY group_nr) AS time_stamp, -- get first time stamp for consecutive identical points
+                            t2.trip_id,
+                            obvs,
+                            MAX(t2.meters) OVER (PARTITION BY t2.trip_id) AS meters, -- length of each trip in meters
+                            MIN(t2.time_stamp) OVER (PARTITION BY t2.trip_id) AS start_time, -- start time of trip
+                            MAX(t2.time_stamp) OVER (PARTITION BY t2.trip_id) AS end_time -- end time of trip
+                       FROM (SELECT *, 
+                                    SUM(group_flag) OVER (ORDER BY t1.trip_id, t1.time_stamp, t1.point) AS group_nr, -- get unique group number for consecutive identical points
+                                    COUNT(*) OVER (PARTITION BY t1.trip_id) AS obvs, -- get number of observations per trip
+                                    ST_Length(ST_MakeLine(t1.point) OVER (PARTITION BY t1.trip_id ORDER BY t1.trip_id, t1.time_stamp)::geography) AS meters
+                               FROM (SELECT *, 
+                                            ST_MakePoint(t.longitude, t.latitude) AS point,
+                                            -- when previous point is same as current, select NULL, else 1
+                                            CASE WHEN LAG(ST_MakePoint(t.longitude, t.latitude)) OVER (ORDER BY t.trip_id, t.time_stamp) = ST_MakePoint(t.longitude, t.latitude) THEN NULL
+                                                 ELSE 1
+                                            END AS group_flag
+                                       FROM "Tracks" AS t
+                                 INNER JOIN minmax USING (trip_id) -- join to CTE to filter on points between start and stop times
+                                      WHERE t.time_stamp BETWEEN start AND stop
+                                        AND t.is_valid = 1
+                                        AND t.latitude > 40 -- within Scottish waters
+                                        AND t.longitude BETWEEN -8 AND 0
+                                        AND NOT EXISTS ( -- outside of 10m buffer
+                                              SELECT 1
+                                                FROM geography.scotlandmap2
+                                               WHERE ST_Contains(buffer_10, ST_SetSRID(ST_MakePoint(t.longitude, t.latitude), 4326))
+                                           )
+                                   ) AS t1
+                            ) AS t2
+                    ) AS t3
+              WHERE obvs > in_obvs
+                AND meters > in_meters
+                AND EXTRACT(EPOCH FROM (end_time - start_time)) > in_time
+           ORDER BY t3.trip_id, t3.time_stamp ASC
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
 -- get vessel data for trips on given date
 CREATE OR REPLACE FUNCTION vesselsForAnalysis ( --{{{
   in_date DATE
@@ -331,6 +409,36 @@ BEGIN
    WHERE trip_id IN (SELECT trip_id
                        FROM "Trips"
                       WHERE trip_date = in_date);
+
+  RETURN QUERY
+    SELECT FOUND;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- delete any analysis for given date and given device
+CREATE OR REPLACE FUNCTION deleteDeviceAnalysis ( --{{{
+  in_date DATE,
+  in_device_id INTEGER
+)
+RETURNS TABLE (
+  deleted BOOLEAN
+)
+AS $FUNC$
+BEGIN
+  DELETE
+    FROM analysis."AnalysedTracks"
+   WHERE trip_id IN (SELECT trip_id
+                       FROM "Trips"
+                      WHERE trip_date = in_date
+                        AND device_id = in_device_id);
+                      
+  DELETE
+    FROM analysis."Estimates"
+   WHERE trip_id IN (SELECT trip_id
+                       FROM "Trips"
+                      WHERE trip_date = in_date
+                        AND device_id = in_device_id);
 
   RETURN QUERY
     SELECT FOUND;
