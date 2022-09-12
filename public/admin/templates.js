@@ -303,7 +303,7 @@ let templates = {
       },
       {'<>': 'div', 'class': 'form-group', 'html': 
                 [
-                 {'<>': 'label', 'for': 'device_string', 'class': 'col-md-6 control-label', 'text': 'Device string'},
+                 {'<>': 'label', 'for': 'device_string', 'class': 'col-md-6 control-label', 'text': 'IMEI (device string)'},
                  {'<>': 'div', 'class': 'col-md-9', 'html':
                            [
                             {'<>': 'input', 'type': 'text', 'class': 'form-control', 'id': 'device_string', 'placeholder': 'Device ID string (e.g. IMEI number)', 'name': 'device_string', 'value': '${device_string}'}
