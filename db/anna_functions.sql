@@ -39,3 +39,92 @@ INNER JOIN "Tracks" AS t USING (trip_id)
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
+
+-- get coin data using date range
+CREATE OR REPLACE FUNCTION getCoinDataDates ( --{{{
+  in_start_date DATE,
+  in_end_date DATE
+)
+RETURNS TABLE (
+  device_name TEXT,
+  vessel_name TEXT,
+  coin_uuid VARCHAR(6),
+  coin_start_time TIMESTAMP WITH TIME ZONE,
+  signal INTEGER,
+  latitude NUMERIC(15, 12),
+  longitude NUMERIC(15, 12),
+  time_stamp TIMESTAMP WITH TIME ZONE
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT u.device_name, v.vessel_name,
+           SUBSTRING(co.coin_uuid, 27)::VARCHAR(6) AS coin_uuid,
+           cr.start_time, cr.signal,
+           tr.latitude, tr.longitude, tr.time_stamp
+      FROM entities."Coins" AS co
+INNER JOIN "CoinDevice" USING (coin_id)
+INNER JOIN "CoinReadings" AS cr USING (coin_device_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN entities."UniqueDevices" as u USING (unique_device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Trips" AS t USING (device_id)
+INNER JOIN LATERAL (
+  SELECT tra.latitude, tra.longitude,
+         ABS(EXTRACT(EPOCH FROM (cr.start_time - tra.time_stamp))) AS diff, tra.time_stamp,
+         tra.trip_id
+    FROM "Tracks" AS tra
+   WHERE trip_id = t.trip_id
+ORDER BY diff ASC
+   LIMIT 1) AS tr USING (trip_id)
+     WHERE to_date IS NULL -- only want devices on vessels
+       AND t.trip_date = cr.start_time::DATE -- trip from same day as coin reading
+       AND cr.start_time BETWEEN in_start_date AND in_end_date
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+-- get coin data using device ID
+CREATE OR REPLACE FUNCTION getCoinDataDevice ( --{{{
+  in_device_id INTEGER
+)
+RETURNS TABLE (
+  device_name TEXT,
+  vessel_name TEXT,
+  coin_uuid VARCHAR(6),
+  coin_start_time TIMESTAMP WITH TIME ZONE,
+  signal INTEGER,
+  latitude NUMERIC(15, 12),
+  longitude NUMERIC(15, 12),
+  time_stamp TIMESTAMP WITH TIME ZONE
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT u.device_name, v.vessel_name,
+           SUBSTRING(co.coin_uuid, 27)::VARCHAR(6) AS coin_uuid,
+           cr.start_time, cr.signal,
+           tr.latitude, tr.longitude, tr.time_stamp
+      FROM entities."Coins" AS co
+INNER JOIN "CoinDevice" USING (coin_id)
+INNER JOIN "CoinReadings" AS cr USING (coin_device_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN entities."UniqueDevices" as u USING (unique_device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Trips" AS t USING (device_id)
+INNER JOIN LATERAL (
+  SELECT tra.latitude, tra.longitude,
+         ABS(EXTRACT(EPOCH FROM (cr.start_time - tra.time_stamp))) AS diff, tra.time_stamp,
+         tra.trip_id
+    FROM "Tracks" AS tra
+   WHERE trip_id = t.trip_id
+ORDER BY diff ASC
+   LIMIT 1) AS tr USING (trip_id)
+     WHERE to_date IS NULL -- only want devices on vessels
+       AND t.trip_date = cr.start_time::DATE -- trip from same day as coin reading
+       AND device_id = in_device_id
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
