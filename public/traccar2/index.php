@@ -7,6 +7,9 @@ namespace TRACCAR2;
 require_once '../autoload.php';
 require_once 'functions.php';
 
+// allowed major/minor numbers
+$allowedMajorMinor = ['020b010a'];
+
 // attributes of device to record in database
 $attributes = array(); //'power', 'distance', 'totalDistance', 'sat', 'battery');
 

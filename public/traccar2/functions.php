@@ -11,7 +11,7 @@ function slice(string $str, int $p) : array { //{{{
 
 // parse io385 data and add to database
 function io385(string $data, int $deviceID, string $timestamp) { //{{{
-    global $db;
+    global $db, $allowedMajorMinor;
     
     // strip of first 2 characters
     list($ignore, $data) = slice($data, 2);
@@ -36,10 +36,13 @@ function io385(string $data, int $deviceID, string $timestamp) { //{{{
                 $signal = (int) base_convert($signal, 16, 10) - 256; // signed 2 complement
             }
             
-            $db->addCoinData($deviceID,
-                             $timestamp,
-                             $uuid, $major, $minor,
-                             $signal);
+            // check that major/minor are recognised
+            if (in_array($major . $minor, $allowedMajorMinor)) {
+                $db->addCoinData($deviceID,
+                                 $timestamp,
+                                 $uuid, $major, $minor,
+                                 $signal);
+            }
             
             break;
             
