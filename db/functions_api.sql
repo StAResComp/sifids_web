@@ -153,12 +153,15 @@ RETURNS TABLE (
   vessel_pln VARCHAR(16),
   owner_id INTEGER,
   fo_id INTEGER,
-  vessel_active SMALLINT
+  vessel_active SMALLINT,
+  vessel_length NUMERIC(6,3),
+  gear_id INTEGER,
+  animal_id INTEGER
 )
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT v.vessel_id, v.vessel_name, v.vessel_code, v.vessel_pln, v.owner_id, v.fo_id, v.vessel_active
+    SELECT v.vessel_id, v.vessel_name, v.vessel_code, v.vessel_pln, v.owner_id, v.fo_id, v.vessel_active, v.vessel_length, v.gear_id, v.animal_id
       FROM "Vessels" AS v
      WHERE v.vessel_id = in_vessel_id
 ;
@@ -1416,7 +1419,6 @@ $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}
 
 -- get data on vessels and devices
--- delete fishery office
 CREATE OR REPLACE FUNCTION apiVesselInfo () --{{{
 RETURNS TABLE (
   vessel_name TEXT,
@@ -1466,7 +1468,7 @@ BEGIN
 INNER JOIN "Devices" USING (unique_device_id) 
  LEFT JOIN "Vessels" AS v USING (vessel_id)
  LEFT JOIN "Trips" USING (device_id) 
-  GROUP BY vessel_id, v.vessel_name, u.device_name, u.device_string 
+  GROUP BY v.vessel_id, v.vessel_name, u.device_name, u.device_string 
   ORDER BY MAX(trip_date) DESC NULLS LAST;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;

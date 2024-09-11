@@ -37,7 +37,7 @@ BEGIN
        SELECT a.attribute_id, in_device_id, in_time_stamp, in_attribute_value
          FROM entities."AttributeTypes" AS a
         WHERE a.attribute_name = in_attribute_name
-	ON CONFLICT DO NOTHING;
+  ON CONFLICT DO NOTHING;
 
   GET DIAGNOSTICS inserted = ROW_COUNT;
   
@@ -111,7 +111,7 @@ ON CONFLICT (device_id) DO
         SET time_stamp = EXCLUDED.time_stamp,
             latitude = EXCLUDED.latitude,
             longitude = EXCLUDED.longitude;
-   
+						
   -- get most recent point from track
     SELECT t.latitude, t.longitude
       INTO old_latitude, old_longitude
@@ -131,6 +131,28 @@ ON CONFLICT (device_id) DO
                    CAST(ST_SetSRID( ST_Point(in_longitude, in_latitude), 4326) as geography))
         RETURNING t.track_id;
     END IF;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
+--}}}
+
+-- add attributes from Traccar not present in JSON
+CREATE OR REPLACE FUNCTION addTraccarAttribute ( --{{{
+  in_attribute_type_id INTEGER,
+  in_device_id INTEGER,
+  in_attribute_value NUMERIC,
+  in_time_stamp TIMESTAMP WITH TIME ZONE
+)
+RETURNS TABLE (
+  inserted BOOLEAN
+)
+AS $FUNC$
+BEGIN
+  INSERT
+    INTO "Attributes" (attribute_id, device_id, time_stamp, attribute_value)
+  VALUES (in_attribute_type_id, in_device_id, in_time_stamp, in_attribute_value);
+  
+  RETURN QUERY
+    SELECT FOUND;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE;
 --}}}

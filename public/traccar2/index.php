@@ -8,7 +8,6 @@ require_once '../autoload.php';
 require_once 'functions.php';
 
 // allowed major/minor numbers
-//$allowedMajorMinor = ['020b010a'];
 $allowedMajorMinor = ['020b010a', 'ed650055', 'd72e0055', 'f3630055'];
 
 // IMEIs to forward to new API

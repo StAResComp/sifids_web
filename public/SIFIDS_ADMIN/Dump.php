@@ -41,6 +41,7 @@ class Dump {
          case 'app_creels':
          case 'app_catch':
          case 'app_observations':
+         case 'coin_data':
             if (!$this->startDate || !$this->endDate) {
                 throw new \Exception('Need start and end dates for trips data');
             }
@@ -129,6 +130,12 @@ class Dump {
     // return data on observations entered into app
     private function app_observations() : array { //{{{
         return $this->db->dumpAppObservations($this->startDate, $this->endDate);
+    }
+    //}}}
+
+    // return data on bluetooth coins
+    private function coin_data() : array { //{{{
+        return $this->db->dumpCoinData($this->startDate, $this->endDate);
     }
     //}}}
 }

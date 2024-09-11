@@ -180,6 +180,7 @@ function addData(\stdClass $data) { //{{{
         strlen($data->position->attributes->io385) > 2) {
         io385($data->position->attributes->io385, $deviceID, $timestamp);
     }
+
     if (isset($data->position->attributes->event) &&
         385 == $data->position->attributes->event) {
         event385($data->position->attributes, $deviceID, $timestamp);

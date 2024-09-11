@@ -8,15 +8,25 @@ CREATE OR REPLACE FUNCTION dumpTrip ( --{{{
 RETURNS TABLE (
   trip_id INTEGER,
   trip_date DATE,
-  vessel_id INTEGER
+  vessel_id INTEGER,
+  pln VARCHAR(16),
+  device_id INTEGER,
+  unique_device_id INTEGER,
+  imei TEXT
 )
 AS $FUNC$
 BEGIN
   RETURN QUERY
-    SELECT t.trip_id, t.trip_date, d.vessel_id
+    SELECT t.trip_id, t.trip_date, 
+           d.vessel_id, v.vessel_pln, d.device_id, 
+           u.unique_device_id, u.device_string
       FROM "Trips" AS t
 INNER JOIN "Devices" AS d USING (device_id)
-     WHERE t.trip_date BETWEEN in_start_date and in_end_date
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN entities."UniqueDevices" AS u USING (unique_device_id)
+     WHERE t.trip_date BETWEEN in_start_date AND in_end_date
+       AND d.from_date <= in_start_date
+       AND (d.to_date IS NULL OR d.to_date >= in_end_date)
   ORDER BY t.trip_date;
 END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
@@ -64,6 +74,36 @@ BEGIN
     SELECT t.track_id, t.trip_id, t.latitude, t.longitude, t.time_stamp, t.is_valid
       FROM "Tracks" AS t
 INNER JOIN "Trips" AS tr USING (trip_id)
+     WHERE tr.trip_date BETWEEN in_start_date and in_end_date
+  ORDER BY tr.trip_id, t.time_stamp;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
+
+-- get track data plus other attributes for trips between given dates
+CREATE OR REPLACE FUNCTION dumpTracksWithAttributes ( --{{{
+  in_start_date DATE,
+  in_end_date DATE
+)
+RETURNS TABLE (
+  track_id INTEGER,
+  trip_id INTEGER,
+  latitude NUMERIC(15, 12),
+  longitude NUMERIC(15, 12),
+  time_stamp TIMESTAMP WITH TIME ZONE,
+  is_valid SMALLINT,
+  power NUMERIC,
+  battery NUMERIC
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT t.track_id, t.trip_id, t.latitude, t.longitude, t.time_stamp, t.is_valid, 
+           p.attribute_value, b.attribute_value
+      FROM "Tracks" AS t
+INNER JOIN "Trips" AS tr USING (trip_id)
+ LEFT JOIN "Attributes" AS p ON (p.device_id = tr.device_id AND p.time_stamp = t.time_stamp AND p.attribute_id = 1)
+ LEFT JOIN "Attributes" AS b ON (p.device_id = tr.device_id AND p.time_stamp = t.time_stamp AND p.attribute_id = 5)
      WHERE tr.trip_date BETWEEN in_start_date and in_end_date
   ORDER BY tr.trip_id, t.time_stamp;
 END;
@@ -224,3 +264,47 @@ END;
 $FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 --}}}
 
+-- get coin data and closest location for devices
+CREATE OR REPLACE FUNCTION dumpCoinData ( --{{{
+  in_start_date DATE,
+  in_end_date DATE
+)
+RETURNS TABLE (
+  device_name TEXT,
+  vessel_name TEXT,
+  coin_uuid VARCHAR(6),
+  start_time TIMESTAMP WITH TIME ZONE,
+  signal INTEGER,
+  latitude NUMERIC(15, 12),
+  longitude NUMERIC(15, 12),
+  time_stamp TIMESTAMP WITH TIME ZONE
+)
+AS $FUNC$
+BEGIN
+  RETURN QUERY
+    SELECT u.device_name, v.vessel_name, 
+           SUBSTRING(co.coin_uuid, 27)::VARCHAR(6) AS coin_uuid, 
+           cr.start_time, cr.signal,
+           tr.latitude, tr.longitude, tr.time_stamp
+      FROM entities."Coins" AS co
+INNER JOIN "CoinDevice" USING (coin_id)
+INNER JOIN "CoinReadings" AS cr USING (coin_device_id)
+INNER JOIN "Devices" USING (device_id)
+INNER JOIN entities."UniqueDevices" as u USING (unique_device_id)
+INNER JOIN "Vessels" AS v USING (vessel_id)
+INNER JOIN "Trips" AS t USING (device_id)
+INNER JOIN LATERAL (
+  SELECT tra.latitude, tra.longitude, 
+         ABS(EXTRACT(EPOCH FROM (cr.start_time - tra.time_stamp))) AS diff, tra.time_stamp,
+         tra.trip_id
+    FROM "Tracks" AS tra
+   WHERE trip_id = t.trip_id
+ORDER BY diff ASC
+   LIMIT 1) AS tr USING (trip_id)
+     WHERE to_date IS NULL -- only want devices on vessels
+       AND t.trip_date = cr.start_time::DATE -- trip from same day as coin reading
+       AND cr.start_time BETWEEN in_start_date AND in_end_date
+;
+END;
+$FUNC$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+--}}}
